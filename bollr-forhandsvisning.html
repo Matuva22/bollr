@@ -229,10 +229,11 @@ function spiralPath(cx,cy,turns,sr,er,sd,steps=260){
 document.getElementById('brandMark').innerHTML=
   `<path d="${spiralPath(15,15,2.8,1.2,12,205)}" fill="none" stroke="#6f4a2f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`;
 
+const BOLLE_TYPER=['Hvetebolle','Kanelbolle','Skolebolle','Solskinnsbolle','Kardemommebolle','Andre boller'];
 const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor størrelse','Autentisk','Nybakt','God pris','Sterk kardemomme','Klassisk','Nyskapende'];
 
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set();
-let state={view:'top',user:null,draft:{score:null,note:'',photoFile:null,photoUrl:null,tags:[],lat:null,lng:null},editing:null};
+let state={view:'top',user:null,draft:{score:null,bolleType:null,note:'',photoFile:null,photoUrl:null,tags:[],lat:null,lng:null},editing:null};
 let _hereResults=[], _searchTimer=null;
 let searchQ='', filterType='';
 let _ready=false;
@@ -466,6 +467,7 @@ function openRate(b,existingRating=null){
   if(!state.user){toast('Du må logge inn for å registrere en bolle');setTimeout(()=>go('profile'),800);return;}
   state.draft={
     score:existingRating?.score!=null?+existingRating.score:null,
+    bolleType:b?.type||null,
     note:existingRating?.note||'',
     photoFile:null,
     photoUrl:existingRating?.photo_url||null,
@@ -476,6 +478,7 @@ function openRate(b,existingRating=null){
   const sliderVal=state.draft.score??0;
   const hasScore=state.draft.score!=null;
   const tagChips=TAGS.map(t=>`<button class="tag-chip ${state.draft.tags.includes(t)?'on':''}" onclick="toggleTag('${esc(t)}')">${esc(t)}</button>`).join('');
+  const bolleChips=BOLLE_TYPER.map(t=>`<button class="tag-chip ${state.draft.bolleType===t?'on':''}" onclick="selectBolleType('${esc(t)}')">${esc(t)}</button>`).join('');
 
   document.getElementById('sheet').innerHTML=`
     <div class="grab"></div>
@@ -487,7 +490,19 @@ function openRate(b,existingRating=null){
         <input id="rName" placeholder="Navn på bakeri" oninput="updateBakerySearch(this.value)" autocomplete="off">
         <div class="suggest-list" id="bakerySuggestions"></div>
       </div>
-      <div class="field"><label>Type bolle</label><input id="rType" placeholder="Skillingsbolle, skolebolle …"></div>`}
+      <div class="field">
+        <label>Type bolle</label>
+        <div class="tag-chips" id="bolleChips">${bolleChips}</div>
+      </div>`}
+
+    <div class="field"><label>Score</label></div>
+    <div class="slider-wrap">
+      <div class="slider-num ${hasScore?'':'empty'}" id="sliderNum">${hasScore?Number(sliderVal).toFixed(2):'–'}<small>${hasScore?' / 5':''}</small></div>
+      <div class="range-wrap">
+        <input type="range" id="scoreSlider" min="0" max="5" step="0.25" value="${sliderVal}" oninput="updateSlider(this.value)">
+      </div>
+      <div class="range-labels"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
+    </div>
 
     <div class="field"><label>Kommentar</label><textarea id="rNote" placeholder="Kardemomme? Sprø kant? Verdt en omvei?">${esc(state.draft.note)}</textarea></div>
 
@@ -500,31 +515,28 @@ function openRate(b,existingRating=null){
       </button>
     </div>
 
-    ${b?'':`<div class="field" style="margin-top:18px"><label>Sted</label><input id="rPlace" placeholder="By eller tettsted"></div>`}
+    ${b?'':`<div class="field"><label>Sted</label><input id="rPlace" placeholder="By eller tettsted"></div>`}
 
     <div class="field">
       <label>Stikkord</label>
       <div class="tag-chips" id="tagChips">${tagChips}</div>
     </div>
 
-    <div class="field"><label>Score</label></div>
-    <div class="slider-wrap">
-      <div class="slider-num ${hasScore?'':'empty'}" id="sliderNum">${hasScore?Number(sliderVal).toFixed(2):'–'}<small>${hasScore?' / 5':''}</small></div>
-      <div class="range-wrap">
-        <input type="range" id="scoreSlider" min="0" max="5" step="0.25" value="${sliderVal}" oninput="updateSlider(this.value)" ${hasScore?'':'style="opacity:.4"'}>
-      </div>
-      <div class="range-labels"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
-    </div>
-
-    <button class="btn" id="saveBtn" ${hasScore&&(b||'')? '':'disabled'} onclick="saveRating()" style="margin-top:8px">${existingRating?'Oppdater vurdering':'Lagre vurdering'}</button>`;
+    <button class="btn" id="saveBtn" ${hasScore&&(b||(state.draft.bolleType&&''))? '':'disabled'} onclick="saveRating()" style="margin-top:16px">${existingRating?'Oppdater vurdering':'Lagre vurdering'}</button>`;
 
   openSheet();
+}
+
+function selectBolleType(t){
+  state.draft.bolleType=t;
+  document.querySelectorAll('#bolleChips .tag-chip').forEach(el=>el.classList.toggle('on',el.textContent===t));
+  updateSaveBtn();
 }
 
 function toggleTag(t){
   const i=state.draft.tags.indexOf(t);
   if(i>=0)state.draft.tags.splice(i,1);else state.draft.tags.push(t);
-  document.querySelectorAll('.tag-chip').forEach(el=>el.classList.toggle('on',state.draft.tags.includes(el.textContent)));
+  document.querySelectorAll('#tagChips .tag-chip').forEach(el=>el.classList.toggle('on',state.draft.tags.includes(el.textContent)));
 }
 
 function updateSlider(val){
@@ -538,8 +550,9 @@ function updateSlider(val){
 function updateSaveBtn(){
   const hasScore=state.draft.score!=null;
   const named=state.editing||document.getElementById('rName')?.value.trim();
+  const hasType=state.editing||state.draft.bolleType;
   const btn=document.getElementById('saveBtn');
-  if(btn)btn.disabled=!(hasScore&&named);
+  if(btn)btn.disabled=!(hasScore&&named&&hasType);
 }
 
 function handlePhoto(input){
@@ -631,7 +644,7 @@ async function saveRating(){
     const {data,error}=await db.from('bakeries').insert({
       name,
       place:document.getElementById('rPlace')?.value.trim()||'Ukjent',
-      type:document.getElementById('rType')?.value.trim()||'Bolle',
+      type:state.draft.bolleType||'Bolle',
       lat:state.draft.lat||null,
       lng:state.draft.lng||null,
     }).select('id').single();
