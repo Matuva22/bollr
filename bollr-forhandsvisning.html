@@ -316,11 +316,12 @@ function viewTop(){
   const ranked=[...list].filter(b=>b.count>0).sort((a,b)=>(b.score??-1)-(a.score??-1));
   const recent=[...approved].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);
   const totalRatings=approved.reduce((s,b)=>s+b.count,0);
+  const uniqueBakeries=new Set(approved.map(b=>b.name)).size;
 
   return`<div class="head">
     <h1>Norges beste boller</h1>
     <p>Finn og ranger Norges beste boller.</p>
-    <div class="meta-line">${approved.length} bakerier · ${totalRatings} vurderinger</div>
+    <div class="meta-line">${uniqueBakeries} ${uniqueBakeries===1?'bakeri':'bakerier'} · ${totalRatings} vurderinger</div>
   </div>
   <div class="search-wrap"><input type="search" placeholder="Søk bakeri, sted eller type …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
   ${ranked.length
@@ -367,7 +368,8 @@ function entryHTML(b,opts={}){
 function viewStats(){
   const approved=BAKERIES.filter(b=>b.count>0);
   const totalRatings=approved.reduce((s,b)=>s+b.count,0);
-  const avgScore=approved.length?approved.reduce((s,b)=>s+(b.score??0),0)/approved.length:null;
+  const uniqueBakeriesCount=new Set(approved.map(b=>b.name)).size;
+  const avgScore=uniqueBakeriesCount?approved.reduce((s,b)=>s+(b.score??0),0)/approved.length:null;
 
   const placeMap={};
   approved.forEach(b=>{if(!placeMap[b.place])placeMap[b.place]={sum:0,n:0,ratings:0};placeMap[b.place].sum+=b.score??0;placeMap[b.place].n++;placeMap[b.place].ratings+=b.count;});
@@ -404,7 +406,7 @@ function viewStats(){
   <div class="stats" style="border-top:none;margin-top:0;padding-top:0">
     <div class="stat-grid">
       <div class="stat-box"><div class="sv">${totalRatings}</div><div class="sl">Vurderinger</div></div>
-      <div class="stat-box"><div class="sv">${approved.length}</div><div class="sl">Bakerier</div></div>
+      <div class="stat-box"><div class="sv">${uniqueBakeriesCount}</div><div class="sl">Bakerier</div></div>
       <div class="stat-box"><div class="sv">${antallByer}</div><div class="sl">Byer og steder</div></div>
       <div class="stat-box"><div class="sv">${avgScore!=null?avgScore.toFixed(2):'–'}</div><div class="sl">Snittkarakter</div></div>
     </div>
@@ -760,6 +762,21 @@ async function approveRating(id){
   render();
 }
 
+async function rejectRating(id){
+  if(!confirm('Avvis og slett denne vurderingen?'))return;
+  const r=_pendingRatings.find(x=>x.id===id);
+  const {error}=await db.rpc('reject_rating',{p_id:id});
+  if(error){toast('Kunne ikke avvise');return;}
+  if(r?.photo_url){
+    const path=r.photo_url.split('/bolle-bilder/')[1];
+    if(path)await db.storage.from('bolle-bilder').remove([path]);
+  }
+  _pendingRatings=_pendingRatings.filter(x=>x.id!==id);
+  toast('Vurdering avvist og slettet');
+  await loadBakeries();await loadUserData();
+  render();
+}
+
 function viewAdmin(){
   if(!_pendingRatings.length)return`<div class="stats"><div class="ey">Godkjenning</div><p style="font-size:13px;color:var(--stone);margin-top:10px">Ingen ventende vurderinger.</p></div>`;
   return`<div class="stats">
@@ -774,7 +791,10 @@ function viewAdmin(){
           </div>
           <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
             <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:300;line-height:1">${Number(r.score).toFixed(2)}<span style="font-size:12px;color:var(--stone)"> /5</span></div>
-            <button class="btn" onclick="approveRating('${r.id}')" style="padding:9px 16px;font-size:11px;width:auto;margin-top:0">Godkjenn</button>
+            <div style="display:flex;gap:6px">
+              <button class="btn ghost" onclick="rejectRating('${r.id}')" style="padding:9px 16px;font-size:11px;width:auto;margin-top:0;color:var(--danger,#c0392b);border-color:var(--danger,#c0392b)">Avvis</button>
+              <button class="btn" onclick="approveRating('${r.id}')" style="padding:9px 16px;font-size:11px;width:auto;margin-top:0">Godkjenn</button>
+            </div>
           </div>
         </div>`).join('')}
     </div>

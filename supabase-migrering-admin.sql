@@ -52,3 +52,20 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION approve_rating(uuid) TO authenticated;
+
+-- Avvis og slett én vurdering (kun admin)
+CREATE OR REPLACE FUNCTION reject_rating(p_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF auth.email() != 'matsmyrholt@gmail.com' THEN
+    RAISE EXCEPTION 'Unauthorized';
+  END IF;
+  DELETE FROM ratings WHERE id = p_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION reject_rating(uuid) TO authenticated;
