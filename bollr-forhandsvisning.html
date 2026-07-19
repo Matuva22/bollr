@@ -237,6 +237,7 @@ const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor stør
 
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set(), MY_PENDING=new Set();
 let _pendingRatings=[];
+let _userCount=null;
 let _finder={type:null,place:null};
 let state={view:'top',user:null,draft:{score:null,bolleType:null,selectedBakeryName:null,selectedBakeryPlace:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
 let _searchTimer=null;
@@ -858,9 +859,13 @@ function viewSmaksliste(){
 
 // ─── Admin ────────────────────────────────────────────────
 async function loadPendingRatings(){
-  const {data,error}=await db.rpc('get_pending_ratings');
-  if(error){console.error('get_pending_ratings feil:',error);_pendingRatings=null;return;}
-  _pendingRatings=data||[];
+  const [{data:p,error:e1},{data:u,error:e2}]=await Promise.all([
+    db.rpc('get_pending_ratings'),
+    db.rpc('get_user_count'),
+  ]);
+  if(e1){console.error('get_pending_ratings feil:',e1);_pendingRatings=null;return;}
+  _pendingRatings=p||[];
+  _userCount=e2?null:u;
 }
 
 async function approveRating(id){
@@ -888,9 +893,14 @@ async function rejectRating(id){
 }
 
 function viewAdmin(){
-  if(!_pendingRatings.length)return`<div class="stats"><div class="ey">Godkjenning</div><p style="font-size:13px;color:var(--stone);margin-top:10px">Ingen ventende vurderinger.</p></div>`;
+  const userBox=_userCount!=null?`<div class="stat-grid" style="margin-bottom:16px">
+    <div class="stat-box"><div class="sv">${_userCount}</div><div class="sl">registrerte brukere</div></div>
+    <div class="stat-box"><div class="sv">${_pendingRatings.length}</div><div class="sl">venter godkjenning</div></div>
+  </div>`:'';
+  if(!_pendingRatings.length)return`<div class="stats"><div class="ey">Admin</div>${userBox}<p style="font-size:13px;color:var(--stone);margin-top:${_userCount!=null?0:10}px">Ingen ventende vurderinger.</p></div>`;
   return`<div class="stats">
-    <div class="ey">Godkjenning (${_pendingRatings.length})</div>
+    <div class="ey">Admin</div>
+    ${userBox}
     <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
       ${_pendingRatings.map(r=>`
         <div style="background:var(--melis-2);border-radius:3px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
