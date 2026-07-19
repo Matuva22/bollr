@@ -236,6 +236,7 @@ document.getElementById('brandMark').innerHTML=
 const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor størrelse','Autentisk','Nybakt','God pris','Sterk kardemomme','Klassisk','Nyskapende'];
 
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set(), MY_PENDING=new Set();
+let _pendingRatings=[];
 let state={view:'top',user:null,draft:{score:null,bolleType:null,selectedBakeryName:null,selectedBakeryPlace:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
 let _searchTimer=null;
 let searchQ='', filterType='';
@@ -296,9 +297,10 @@ async function loginEmail(){
 async function logout(){await db.auth.signOut();go('top');}
 
 // ─── Routing ──────────────────────────────────────────────
-function go(v){
+async function go(v){
   state.view=v;
   ['top','stats','smaksliste','profile'].forEach(k=>document.getElementById('nav-'+k)?.classList.toggle('on',v===k));
+  if(v==='profile'&&state.user)await loadPendingRatings();
   render();window.scrollTo(0,0);
 }
 function render(){
@@ -739,6 +741,42 @@ function viewSmaksliste(){
     :`<div class="empty"><span class="serif">Smakslista er tom</span><p>Trykk hjertet på et bakeri for å legge det til.</p></div>`}`;
 }
 
+// ─── Admin ────────────────────────────────────────────────
+async function loadPendingRatings(){
+  const {data,error}=await db.rpc('get_pending_ratings');
+  _pendingRatings=error?null:data||[];
+}
+
+async function approveRating(id){
+  const {error}=await db.rpc('approve_rating',{p_id:id});
+  if(error){toast('Kunne ikke godkjenne');return;}
+  _pendingRatings=_pendingRatings.filter(r=>r.id!==id);
+  toast('Vurdering godkjent ✓');
+  await loadBakeries();await loadUserData();
+  render();
+}
+
+function viewAdmin(){
+  if(!_pendingRatings.length)return`<div class="stats"><div class="ey">Godkjenning</div><p style="font-size:13px;color:var(--stone);margin-top:10px">Ingen ventende vurderinger.</p></div>`;
+  return`<div class="stats">
+    <div class="ey">Godkjenning (${_pendingRatings.length})</div>
+    <div style="margin-top:12px;display:flex;flex-direction:column;gap:10px">
+      ${_pendingRatings.map(r=>`
+        <div style="background:var(--melis-2);border-radius:3px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:400">${esc(r.bakery_name)}</div>
+            <div style="font-size:12px;color:var(--stone);margin-top:2px">${esc(r.bakery_type)} · ${esc(r.bakery_place)}</div>
+            ${r.note?`<div style="font-size:12px;color:var(--stone);margin-top:5px;font-style:italic">"${esc(r.note)}"</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">
+            <div style="font-family:'Fraunces',serif;font-size:24px;font-weight:300;line-height:1">${Number(r.score).toFixed(2)}<span style="font-size:12px;color:var(--stone)"> /5</span></div>
+            <button class="btn" onclick="approveRating('${r.id}')" style="padding:9px 16px;font-size:11px;width:auto;margin-top:0">Godkjenn</button>
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
 // ─── Profil ───────────────────────────────────────────────
 function viewLogin(){
   return`<div class="login">
@@ -784,6 +822,7 @@ function viewProfile(){
       ${topBakery?`<div class="stat-box" style="grid-column:span 2"><div class="sv" style="font-size:13px;padding-top:2px">${esc(topBakery.name)}</div><div class="sl">din beste bolle · ${topBakery.score.toFixed(2)}/5</div></div>`:''}
     </div>
   </div>
+  ${_pendingRatings!==null?viewAdmin():''}
   <div style="padding:16px 24px"><button class="btn ghost" onclick="logout()">Logg ut</button></div>`;
 }
 
