@@ -234,6 +234,7 @@ const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor stør
 
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set(), MY_PENDING=new Set();
 let _pendingRatings=[];
+let _finder={type:null,place:null};
 let state={view:'top',user:null,draft:{score:null,bolleType:null,selectedBakeryName:null,selectedBakeryPlace:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
 let _searchTimer=null;
 let searchQ='';
@@ -324,6 +325,12 @@ function viewTop(){
     <div class="meta-line">${uniqueBakeries} ${uniqueBakeries===1?'bakeri':'bakerier'} · ${totalRatings} vurderinger</div>
   </div>
   <div class="search-wrap"><input type="search" placeholder="Søk bakeri, sted eller type …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
+  <div style="padding:0 24px 12px">
+    <button onclick="openFinder()" style="width:100%;background:var(--melis-2);border:none;border-radius:3px;padding:11px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <span style="font-size:13px;font-weight:600;color:var(--kard);font-family:'Inter'">Finn din bolle</span>
+      <span style="font-size:12px;color:var(--stone);font-family:'Inter'">Hjelp meg velge →</span>
+    </button>
+  </div>
   ${ranked.length
     ?`<div class="list">${ranked.map((b,i)=>entryHTML(b,{rank:i+1,top:i===0&&!searchQ})).join('')}</div>`
     :searchQ
@@ -338,6 +345,54 @@ function setSearch(q){
   searchQ=q.toLowerCase().trim();render();
   const input=document.querySelector('.search-wrap input');
   if(input){input.focus();const l=input.value.length;input.setSelectionRange(l,l);}
+}
+
+// ─── Finn din bolle ───────────────────────────────────────
+function openFinder(){
+  _finder={type:null,place:null};
+  openSheet();
+  renderFinderSheet();
+}
+function setFinderType(t){
+  _finder.type=_finder.type===t?null:t;
+  renderFinderSheet();
+}
+function setFinderPlace(p){
+  _finder.place=_finder.place===p?null:p;
+  renderFinderSheet();
+}
+function renderFinderSheet(){
+  const approved=BAKERIES.filter(b=>b.count>0);
+  const types=[...new Set(approved.map(b=>b.type))].sort();
+  const places=[...new Set(approved.map(b=>b.place))].sort();
+
+  let results=[...approved];
+  if(_finder.type)results=results.filter(b=>b.type===_finder.type);
+  if(_finder.place)results=results.filter(b=>b.place===_finder.place);
+  results=results.sort((a,b)=>(b.score??-1)-(a.score??-1)).slice(0,5);
+
+  const typeChips=types.map(t=>`<button class="tag-chip ${_finder.type===t?'on':''}" onclick="setFinderType('${esc(t)}')">${esc(t)}</button>`).join('');
+  const placeChips=places.map(p=>`<button class="tag-chip ${_finder.place===p?'on':''}" onclick="setFinderPlace('${esc(p)}')">${esc(p)}</button>`).join('');
+
+  const hasFilter=_finder.type||_finder.place;
+  const resultHTML=hasFilter
+    ?(results.length
+      ?`<div class="list" style="margin:0 -24px">${results.map((b,i)=>entryHTML(b,{rank:i+1})).join('')}</div>`
+      :`<p style="color:var(--stone);font-size:13px">Ingen treff med disse valgene.</p>`)
+    :`<p style="color:var(--stone);font-size:13px">Velg minst ett filter ovenfor.</p>`;
+
+  document.getElementById('sheet').innerHTML=`
+    <div class="grab"></div>
+    <div style="padding:24px 24px 40px">
+      <h2 style="font-family:'Fraunces',serif;font-size:26px;font-weight:300;margin-bottom:4px">Finn din bolle</h2>
+      <p style="color:var(--stone);font-size:13px;margin-bottom:24px">Velg hva du vil ha og hvor du er.</p>
+      <div class="ey" style="margin-bottom:10px">Hva slags bolle?</div>
+      <div class="tag-chips" style="margin-bottom:24px">${typeChips}</div>
+      <div class="ey" style="margin-bottom:10px">Hvilken by eller sted?</div>
+      <div class="tag-chips" style="margin-bottom:24px">${placeChips}</div>
+      ${hasFilter?`<div class="ey" style="margin-bottom:4px">Beste treff</div>`:''}
+      ${resultHTML}
+    </div>`;
 }
 
 function entryHTML(b,opts={}){
