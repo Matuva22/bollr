@@ -9,7 +9,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
   :root{
-    --melis:#f7efdd;--melis-2:#efe3c8;--kanel:#6f4a2f;--kanel-deep:#4e3220;
+    --melis:#fdf8f0;--melis-2:#f0e8d4;--kanel:#6f4a2f;--kanel-deep:#4e3220;
     --kard:#141210;--stone:#8a7d6d;--hair:rgba(20,18,16,.10);--hair-2:rgba(20,18,16,.06);
   }
   html,body{background:var(--kard)}
@@ -35,10 +35,6 @@
   .search-wrap input:focus{outline:none;border-color:var(--kanel)}
   .search-wrap input::placeholder{color:var(--stone);opacity:.7}
 
-  .chips{display:flex;gap:8px;padding:12px 24px;overflow-x:auto;scrollbar-width:none}
-  .chips::-webkit-scrollbar{display:none}
-  .chip{border:1px solid var(--hair);border-radius:20px;padding:5px 14px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--stone);background:none;cursor:pointer;white-space:nowrap;font-family:'Inter'}
-  .chip.on{background:var(--kard);color:var(--melis);border-color:var(--kard)}
 
   .list{padding:8px 24px}
   .entry{padding:18px 0;border-bottom:1px solid var(--hair-2);cursor:pointer;display:flex;align-items:flex-start;gap:14px}
@@ -239,7 +235,7 @@ let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set(), MY_PENDING=new Set(
 let _pendingRatings=[];
 let state={view:'top',user:null,draft:{score:null,bolleType:null,selectedBakeryName:null,selectedBakeryPlace:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
 let _searchTimer=null;
-let searchQ='', filterType='';
+let searchQ='';
 let _ready=false;
 const myRatingStore={};
 
@@ -314,11 +310,9 @@ function render(){
 // ─── Toppliste ────────────────────────────────────────────
 function viewTop(){
   let list=[...BAKERIES];
-  if(searchQ)list=list.filter(b=>b.name.toLowerCase().includes(searchQ)||b.place.toLowerCase().includes(searchQ));
-  if(filterType)list=list.filter(b=>b.type===filterType);
+  if(searchQ)list=list.filter(b=>b.name.toLowerCase().includes(searchQ)||b.place.toLowerCase().includes(searchQ)||b.type.toLowerCase().includes(searchQ));
   const approved=BAKERIES.filter(b=>b.count>0);
   const ranked=[...list].filter(b=>b.count>0).sort((a,b)=>(b.score??-1)-(a.score??-1));
-  const types=[...new Set(approved.map(b=>b.type))].sort();
   const recent=[...approved].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);
   const totalRatings=approved.reduce((s,b)=>s+b.count,0);
 
@@ -327,15 +321,13 @@ function viewTop(){
     <p>Finn og ranger Norges beste boller.</p>
     <div class="meta-line">${approved.length} bakerier · ${totalRatings} vurderinger</div>
   </div>
-  <div class="search-wrap"><input type="search" placeholder="Søk bakeri eller sted …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
-  <div class="chips">
-    <button class="chip ${!filterType?'on':''}" onclick="setFilter('')">Alle</button>
-    ${types.map(t=>`<button class="chip ${filterType===t?'on':''}" onclick="setFilter('${esc(t)}')">${esc(t)}</button>`).join('')}
-  </div>
+  <div class="search-wrap"><input type="search" placeholder="Søk bakeri, sted eller type …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
   ${ranked.length
-    ?`<div class="list">${ranked.map((b,i)=>entryHTML(b,{rank:i+1})).join('')}</div>`
-    :`<div class="empty"><span class="serif">Ingen treff</span><p>Prøv et annet søk.</p></div>`}
-  ${!searchQ&&!filterType&&recent.length?`
+    ?`<div class="list">${ranked.map((b,i)=>entryHTML(b,{rank:i+1,top:i===0&&!searchQ})).join('')}</div>`
+    :searchQ
+      ?`<div class="empty"><span class="serif">Ingen treff</span><p>Prøv et annet søk.</p></div>`
+      :`<div class="empty"><span class="serif">Ingen boller ennå</span><p>Bli den første til å vurdere en bolle.</p><button class="btn" onclick="openRate()" style="margin-top:20px;max-width:220px">Vurder en bolle</button></div>`}
+  ${!searchQ&&recent.length?`
     <div class="sec"><div class="ey">Sist lagt til</div></div>
     <div class="list">${recent.map(b=>entryHTML(b)).join('')}</div>`:''}`;
 }
@@ -345,10 +337,10 @@ function setSearch(q){
   const input=document.querySelector('.search-wrap input');
   if(input){input.focus();const l=input.value.length;input.setSelectionRange(l,l);}
 }
-function setFilter(t){filterType=t;render();}
 
 function entryHTML(b,opts={}){
-  const rank=opts.rank?`<span class="rank">${String(opts.rank).padStart(2,'0')}</span>`:'';
+  const rankStyle=opts.top?'color:var(--kanel);font-weight:500':'';
+  const rank=opts.rank?`<span class="rank" style="${rankStyle}">${String(opts.rank).padStart(2,'0')}</span>`:'';
   const thumb=b.photo_url?`<img class="entry-thumb" src="${esc(b.photo_url)}" loading="lazy">`:'';
   return`<div class="entry" onclick="openBakery('${b.id}')">
     ${rank}
@@ -744,7 +736,8 @@ function viewSmaksliste(){
 // ─── Admin ────────────────────────────────────────────────
 async function loadPendingRatings(){
   const {data,error}=await db.rpc('get_pending_ratings');
-  _pendingRatings=error?null:data||[];
+  if(error){console.error('get_pending_ratings feil:',error);_pendingRatings=null;return;}
+  _pendingRatings=data||[];
 }
 
 async function approveRating(id){

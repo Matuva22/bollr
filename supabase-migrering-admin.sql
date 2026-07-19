@@ -21,7 +21,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  IF (SELECT email FROM auth.users WHERE id = auth.uid()) != 'matsmyrholt@gmail.com' THEN
+  IF auth.email() != 'matsmyrholt@gmail.com' THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
   RETURN QUERY
@@ -44,7 +44,7 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
-  IF (SELECT email FROM auth.users WHERE id = auth.uid()) != 'matsmyrholt@gmail.com' THEN
+  IF auth.email() != 'matsmyrholt@gmail.com' THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
   UPDATE ratings SET approved = true WHERE id = p_id;
