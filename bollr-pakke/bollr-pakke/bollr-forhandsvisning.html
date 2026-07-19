@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#141210">
+<title>Bollr</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --melis:#f7efdd;
+    --melis-2:#efe3c8;
+    --kanel:#6f4a2f;
+    --kanel-deep:#4e3220;
+    --kard:#141210;
+    --kard-soft:#2a2521;
+    --stone:#8a7d6d;
+    --hair:rgba(20,18,16,.10);
+    --hair-2:rgba(20,18,16,.06);
+  }
+  html,body{background:var(--kard)}
+  body{
+    font-family:'Inter',-apple-system,system-ui,sans-serif;
+    color:var(--kard);background:var(--melis);
+    -webkit-font-smoothing:antialiased;line-height:1.55;
+    padding:env(safe-area-inset-top) 0 0;overflow-x:hidden
+  }
+  .app{max-width:480px;margin:0 auto;min-height:100vh;background:var(--melis);position:relative;padding-bottom:110px}
+  .serif{font-family:'Fraunces',Georgia,serif}
+
+  /* ===== Top bar ===== */
+  .top{
+    position:sticky;top:0;z-index:30;background:var(--melis);
+    padding:calc(env(safe-area-inset-top) + 18px) 24px 14px;
+    display:flex;align-items:center;justify-content:space-between;
+    border-bottom:1px solid var(--hair-2)
+  }
+  .brand{display:flex;align-items:center;gap:11px}
+  .brand svg{width:30px;height:30px;display:block}
+  .brand .wm{font-family:'Fraunces',serif;font-weight:300;font-size:26px;letter-spacing:.05em;color:var(--kard);line-height:1}
+  .brand .wm b{font-weight:400}
+  .brand .lockup{display:flex;flex-direction:column;gap:3px}
+  .brand .tag{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--stone);font-weight:500}
+  .me{
+    width:36px;height:36px;border-radius:50%;border:1px solid var(--hair);
+    background:none;color:var(--kanel);font-weight:600;font-size:14px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Fraunces',serif
+  }
+
+  /* ===== Location line ===== */
+  .loc{
+    display:flex;align-items:center;gap:8px;padding:12px 24px;font-size:12px;
+    letter-spacing:.06em;color:var(--stone);border-bottom:1px solid var(--hair-2)
+  }
+  .loc svg{width:13px;height:13px}
+  .loc .lk{margin-left:auto;color:var(--kanel);font-weight:600;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;font-size:10.5px}
+
+  /* ===== Section head ===== */
+  .head{padding:30px 24px 10px}
+  .head .ey{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--kanel);font-weight:600}
+  .head h1{font-family:'Fraunces',serif;font-weight:300;font-size:32px;letter-spacing:0;margin-top:8px;line-height:1.08}
+  .head p{font-size:13.5px;color:var(--stone);margin-top:10px;line-height:1.6;max-width:340px}
+
+  /* ===== List ===== */
+  .list{padding:8px 24px}
+  .entry{
+    padding:20px 0;border-bottom:1px solid var(--hair-2);cursor:pointer;
+    display:flex;align-items:baseline;gap:16px;position:relative
+  }
+  .entry:last-child{border-bottom:none}
+  .rank{font-family:'Fraunces',serif;font-weight:300;font-size:15px;color:var(--stone);min-width:26px;font-variant-numeric:tabular-nums}
+  .entry .body{flex:1;min-width:0}
+  .entry h3{font-family:'Fraunces',serif;font-weight:400;font-size:20px;letter-spacing:0;line-height:1.15}
+  .entry .meta{font-size:12px;color:var(--stone);margin-top:4px;letter-spacing:.02em}
+  .entry .meta .type{color:var(--kanel);font-weight:500}
+  .entry .meta .dot{margin:0 6px;opacity:.4}
+  .entry .rgt{text-align:right;flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .score{font-family:'Fraunces',serif;font-weight:400;font-size:26px;line-height:1;color:var(--kard);font-variant-numeric:tabular-nums}
+  .score small{font-size:12px;color:var(--stone)}
+  .cnt{font-size:10.5px;color:var(--stone);letter-spacing:.04em}
+  .entry .acts{display:flex;gap:14px;margin-top:12px}
+  .ln{background:none;border:none;padding:0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--kanel);cursor:pointer;display:flex;align-items:center;gap:5px}
+  .ln svg{width:13px;height:13px}
+  .ln.wish.on{color:var(--kanel-deep)}
+
+  /* ===== Nearby map (restrained) ===== */
+  .map{
+    margin:6px 24px 0;height:150px;border-radius:4px;overflow:hidden;position:relative;
+    background:var(--melis-2);border:1px solid var(--hair)
+  }
+  .map svg.grid{position:absolute;inset:0;width:100%;height:100%;opacity:.6}
+  .map .pin{position:absolute;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--kanel);cursor:pointer;border:2px solid var(--melis)}
+  .map .pin.top{width:14px;height:14px;background:var(--kard)}
+  .map .you{position:absolute;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:none;border:2px solid var(--kanel);box-shadow:0 0 0 4px rgba(111,74,47,.14)}
+  .map .cap{position:absolute;left:12px;bottom:10px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--stone)}
+
+  /* ===== Bottom nav ===== */
+  .nav{
+    position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;
+    background:var(--melis);border-top:1px solid var(--hair);
+    padding:12px 20px calc(12px + env(safe-area-inset-bottom));
+    display:flex;justify-content:space-between;align-items:center;z-index:35
+  }
+  .nav button{
+    background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;
+    color:var(--stone);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;padding:2px 8px
+  }
+  .nav button svg{width:20px;height:20px;stroke-width:1.6}
+  .nav button.on{color:var(--kard)}
+  .nav .plus{
+    background:var(--kard);color:var(--melis);width:48px;height:48px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;flex-direction:row
+  }
+  .nav .plus svg{width:22px;height:22px;stroke-width:1.8}
+
+  /* ===== Empty ===== */
+  .empty{text-align:center;padding:60px 40px;color:var(--stone)}
+  .empty .serif{font-size:20px;color:var(--kard);display:block;margin-bottom:8px;font-weight:300}
+  .empty p{font-size:13.5px;line-height:1.6}
+
+  /* ===== Sheet ===== */
+  .scrim{position:fixed;inset:0;background:rgba(20,18,16,.5);opacity:0;pointer-events:none;transition:.3s;z-index:50;backdrop-filter:blur(3px)}
+  .scrim.open{opacity:1;pointer-events:auto}
+  .sheet{
+    position:fixed;left:0;right:0;bottom:0;max-width:480px;margin:0 auto;z-index:60;
+    background:var(--melis);border-top-left-radius:8px;border-top-right-radius:8px;
+    transform:translateY(100%);transition:transform .34s cubic-bezier(.22,1,.36,1);
+    max-height:94vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    padding:0 24px calc(32px + env(safe-area-inset-bottom))
+  }
+  .sheet.open{transform:translateY(0)}
+  .grab{width:36px;height:4px;background:var(--hair);border-radius:2px;margin:12px auto 20px}
+  .sheet h2{font-family:'Fraunces',serif;font-weight:300;font-size:26px;letter-spacing:0}
+  .sheet .lead{font-size:13px;color:var(--stone);margin:6px 0 24px;letter-spacing:.02em}
+
+  .field{margin-bottom:18px}
+  .field label{display:block;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--kanel);margin-bottom:9px}
+  .field input,.field textarea{
+    width:100%;border:none;border-bottom:1px solid var(--hair);border-radius:0;padding:8px 0;
+    font-size:16px;font-family:'Fraunces',serif;font-weight:300;color:var(--kard);background:none
+  }
+  .field textarea{font-family:'Inter';font-size:14px;resize:none;height:52px;line-height:1.5}
+  .field input:focus,.field textarea:focus{outline:none;border-bottom-color:var(--kanel)}
+  .field input::placeholder,.field textarea::placeholder{color:var(--stone);opacity:.6}
+
+  .crit{margin-bottom:20px}
+  .crit .t{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+  .crit .cn{font-size:13.5px;font-weight:500}
+  .crit .cn em{font-style:normal;color:var(--stone);font-size:11px;font-weight:400;display:block;margin-top:1px}
+  .crit .cv{font-family:'Fraunces',serif;font-size:17px;color:var(--kanel);min-width:18px;text-align:right}
+  .scale{display:flex;gap:0;border:1px solid var(--hair);border-radius:3px;overflow:hidden}
+  .scale button{flex:1;height:38px;border:none;border-right:1px solid var(--hair);background:var(--melis);font-family:'Fraunces',serif;font-size:14px;color:var(--stone);cursor:pointer;transition:.12s}
+  .scale button:last-child{border-right:none}
+  .scale button.on{background:var(--kard);color:var(--melis)}
+
+  .live{display:flex;justify-content:space-between;align-items:baseline;padding:18px 0;border-top:1px solid var(--hair);border-bottom:1px solid var(--hair);margin:6px 0 20px}
+  .live .l{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--stone)}
+  .live .v{font-family:'Fraunces',serif;font-weight:300;font-size:34px;color:var(--kard);font-variant-numeric:tabular-nums}
+  .live .v small{font-size:15px;color:var(--stone)}
+
+  .btn{width:100%;background:var(--kard);color:var(--melis);border:none;border-radius:3px;padding:16px;font-size:13px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:'Inter'}
+  .btn:disabled{opacity:.3}
+  .btn.ghost{background:none;color:var(--kanel);border:1px solid var(--hair);margin-top:10px}
+  .anon{display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--stone);line-height:1.5;margin-top:16px}
+  .anon svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;stroke:var(--kanel)}
+
+  /* ===== Login ===== */
+  .login{padding:36px 24px 10px;text-align:center}
+  .login .mk{width:56px;height:56px;margin:0 auto 22px}
+  .login h2{font-family:'Fraunces',serif;font-weight:300;font-size:28px}
+  .login .login-tag{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--kanel);font-weight:600;margin-top:10px}
+  .login p{font-size:13.5px;color:var(--stone);margin:10px auto 28px;max-width:300px;line-height:1.6}
+  .sso{display:flex;flex-direction:column;gap:10px;text-align:left}
+  .sso button{
+    display:flex;align-items:center;gap:12px;width:100%;padding:15px 18px;border-radius:3px;
+    font-size:14.5px;font-weight:500;cursor:pointer;border:1px solid var(--hair);background:var(--melis);color:var(--kard);font-family:'Inter'
+  }
+  .sso button svg{width:18px;height:18px}
+  .sso .soon{margin-left:auto;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--stone)}
+  .login .fine{font-size:11px;color:var(--stone);margin-top:20px;line-height:1.5}
+
+  /* ===== Segmented ===== */
+  .seg{display:flex;border-bottom:1px solid var(--hair);margin:6px 24px 0}
+  .seg button{flex:1;background:none;border:none;padding:14px 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--stone);cursor:pointer;position:relative}
+  .seg button.on{color:var(--kard)}
+  .seg button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--kard)}
+
+  .toast{
+    position:fixed;bottom:120px;left:50%;transform:translateX(-50%) translateY(16px);
+    background:var(--kard);color:var(--melis);padding:12px 22px;border-radius:3px;font-size:12.5px;letter-spacing:.03em;
+    opacity:0;pointer-events:none;transition:.3s;z-index:80;white-space:nowrap
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .demo{position:fixed;top:calc(env(safe-area-inset-top) + 8px);left:50%;transform:translateX(-50%);background:var(--kard);color:var(--melis);font-size:9px;letter-spacing:.16em;text-transform:uppercase;padding:3px 11px;border-radius:20px;z-index:90;opacity:.85}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="demo">Forhåndsvisning</div>
+<div class="app">
+
+  <div class="top">
+    <div class="brand">
+      <svg viewBox="0 0 30 30" fill="none" id="brandMark"></svg>
+      <span class="lockup">
+        <span class="wm">boll<b>r</b></span>
+        <span class="tag">Finn og ranger boller</span>
+      </span>
+    </div>
+    <button class="me" id="meBtn" onclick="go('profile')">·</button>
+  </div>
+
+  <div class="loc">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
+    <span id="locText">Nær Åndalsnes</span>
+    <span class="lk" id="locLink" onclick="enableLoc()">Bruk posisjon</span>
+  </div>
+
+  <div id="views"></div>
+</div>
+
+<div class="nav">
+  <button class="on" id="nav-nearby" onclick="go('nearby')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg>Nærhet
+  </button>
+  <button id="nav-top" onclick="go('top')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 20V10M12 20V5M18 20v-8"/></svg>Kåring
+  </button>
+  <button class="plus" onclick="openRate()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+  </button>
+  <button id="nav-map" onclick="go('map')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l6 2 6-2v13l-6 2-6-2-6 2V7z"/><path d="M9 5v13M15 7v13"/></svg>Kart
+  </button>
+  <button id="nav-lists" onclick="go('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M5 12h14M5 17h9"/></svg>Mitt
+  </button>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="scrim" id="scrim" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"></div>
+
+<script>
+// spiral path (centered, 30-viewbox for brand; scaled for login)
+function spiralPath(cx,cy,turns,sr,er,sd,steps=260){
+  const sa=sd*Math.PI/180, ta=turns*2*Math.PI, pts=[];
+  for(let i=0;i<=steps;i++){const t=i/steps,ang=sa+t*ta,r=sr+(er-sr)*t;pts.push([cx+r*Math.cos(ang),cy+r*Math.sin(ang)]);}
+  // center
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+  const mx=(Math.min(...xs)+Math.max(...xs))/2,my=(Math.min(...ys)+Math.max(...ys))/2;
+  const c=pts.map(p=>[p[0]+cx-mx,p[1]+cy-my]);
+  let d=`M ${c[0][0].toFixed(2)} ${c[0][1].toFixed(2)} `;
+  for(let i=1;i<c.length-1;i++){const nx=(c[i][0]+c[i+1][0])/2,ny=(c[i][1]+c[i+1][1])/2;d+=`Q ${c[i][0].toFixed(2)} ${c[i][1].toFixed(2)} ${nx.toFixed(2)} ${ny.toFixed(2)} `;}
+  d+=`L ${c[c.length-1][0].toFixed(2)} ${c[c.length-1][1].toFixed(2)}`;
+  return d;
+}
+document.getElementById('brandMark').innerHTML=
+  `<path d="${spiralPath(15,15,2.8,1.2,12,205)}" fill="none" stroke="#6f4a2f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+const CRITERIA=[
+  {key:"smak",name:"Smak",hint:"Helhetlig smak",w:.20},
+  {key:"saft",name:"Saftighet",hint:"Fuktig, ikke tørr",w:.18},
+  {key:"deig",name:"Deig / tekstur",hint:"Luftig, ikke brødaktig",w:.15},
+  {key:"fyll",name:"Fyll / topping",hint:"Krem, glasur, dryss",w:.15},
+  {key:"sodme",name:"Sødme / balanse",hint:"Ikke for søt",w:.12},
+  {key:"utseende",name:"Utseende",hint:"Form og appell",w:.10},
+  {key:"pris",name:"Størrelse / pris",hint:"Verdi for pengene",w:.10},
+];
+
+let BAKERIES=[
+  {id:1,name:"Sødahlhuset",place:"Åndalsnes",type:"Skillingsbolle",score:5.4,count:38,dist:0.4,x:52,y:44,wish:false,lat:62.567,lng:7.687},
+  {id:2,name:"Lillehammer Bakeri",place:"Lillehammer",type:"Kanelbolle",score:5.1,count:64,dist:1.2,x:32,y:66,wish:true,lat:61.115,lng:10.466},
+  {id:3,name:"Valaker Bakeri",place:"Ålesund",type:"Kardemommebolle",score:5.0,count:41,dist:2.1,x:70,y:32,wish:false,lat:62.472,lng:6.155},
+  {id:4,name:"Åpent Bakeri",place:"Oslo",type:"Skolebolle",score:4.8,count:120,dist:3.4,x:46,y:54,wish:false,lat:59.923,lng:10.735},
+  {id:5,name:"Hev Ringebu",place:"Ringebu",type:"Hvetebolle",score:4.6,count:22,dist:5.0,x:62,y:62,wish:true,lat:61.527,lng:10.145},
+  {id:6,name:"Pillarguri Café",place:"Otta",type:"Kanelsnurr",score:4.3,count:18,dist:6.7,x:26,y:40,wish:false,lat:61.771,lng:9.539},
+];
+
+let state={view:'nearby',user:null,locOn:false,tab:'tasted',draft:{},editing:null};
+let MY_TASTED=[];
+
+function scoreOf(s){const f=CRITERIA.filter(c=>s[c.key]>0);if(!f.length)return null;const tw=f.reduce((a,c)=>a+c.w,0);return f.reduce((a,c)=>a+s[c.key]*c.w,0)/tw;}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200);}
+
+function go(v){
+  state.view=v;
+  ['nearby','top','map','lists'].forEach(n=>document.getElementById('nav-'+n)?.classList.remove('on'));
+  ({nearby:'nav-nearby',top:'nav-top',map:'nav-map',profile:'nav-lists'})[v] &&
+    document.getElementById(({nearby:'nav-nearby',top:'nav-top',map:'nav-map',profile:'nav-lists'})[v]).classList.add('on');
+  render();window.scrollTo(0,0);
+}
+
+function render(){
+  const v=document.getElementById('views');
+  if(state.view==='nearby')v.innerHTML=viewNearby();
+  else if(state.view==='top')v.innerHTML=viewTop();
+  else if(state.view==='map')v.innerHTML=viewMap();
+  else v.innerHTML=state.user?viewProfile():viewLogin();
+}
+
+function entryHTML(b,opts={}){
+  const rank=opts.rank?`<span class="rank">${String(opts.rank).padStart(2,'0')}</span>`:'';
+  return `<div class="entry" onclick="openBakery(${b.id})">
+    ${rank}
+    <div class="body">
+      <h3>${esc(b.name)}</h3>
+      <div class="meta"><span class="type">${esc(b.type)}</span><span class="dot">·</span>${esc(b.place)}${opts.dist?`<span class="dot">·</span>${b.dist.toFixed(1)} km`:''}</div>
+      <div class="acts">
+        <button class="ln wish ${b.wish?'on':''}" onclick="event.stopPropagation();toggleWish(${b.id})">
+          <svg viewBox="0 0 24 24" fill="${b.wish?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>${b.wish?'Ønsket':'Ønskeliste'}
+        </button>
+        <button class="ln" onclick="event.stopPropagation();directions(${b.id})">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>Vei
+        </button>
+      </div>
+    </div>
+    <div class="rgt">
+      <div class="score">${b.score.toFixed(1)}<small> /6</small></div>
+      <div class="cnt">${b.count} vurderinger</div>
+    </div>
+  </div>`;
+}
+
+function viewNearby(){
+  const s=[...BAKERIES].sort((a,b)=>a.dist-b.dist);
+  return `<div class="head">
+    <div class="ey">${state.locOn?'Din posisjon':'Rundt Åndalsnes'}</div>
+    <h1>I nærheten</h1>
+    <p>De nærmeste bakeriene, etter fellesskapets snitt. Trykk «Vei» for rute i Google Maps.</p>
+  </div>
+  ${miniMap(s.slice(0,5))}
+  <div class="list">${s.map(b=>entryHTML(b,{dist:true})).join('')}</div>`;
+}
+function viewTop(){
+  const s=[...BAKERIES].sort((a,b)=>b.score-a.score);
+  return `<div class="head">
+    <div class="ey">Hele Norge · anonymt</div>
+    <h1>Norges beste boller</h1>
+    <p>Kåret av fellesskapet, rangert på anonyme snitt — så ærligheten består.</p>
+  </div>
+  <div class="list">${s.map((b,i)=>entryHTML(b,{rank:i+1})).join('')}</div>`;
+}
+function miniMap(list){
+  return `<div class="map">
+    <svg class="grid" viewBox="0 0 100 60" preserveAspectRatio="none">
+      <path d="M-5 38 Q30 32 55 36 T105 30" stroke="#d8cdbb" stroke-width="1" fill="none"/>
+      <path d="M25 -5 Q30 26 42 40 T52 65" stroke="#e2d9c9" stroke-width="1" fill="none"/>
+    </svg>
+    ${state.locOn?'<div class="you" style="left:48%;top:52%"></div>':''}
+    ${list.map((b,i)=>`<div class="pin ${i===0?'top':''}" style="left:${b.x}%;top:${b.y}%" onclick="openBakery(${b.id})"></div>`).join('')}
+    <div class="cap">${state.locOn?'Din posisjon':'Kart'}</div>
+  </div>`;
+}
+function viewMap(){
+  return `<div class="head"><div class="ey">Utforsk</div><h1>Kart</h1>
+    <p>Bollene rundt deg. I den ferdige appen blir dette et fullt kart du kan panorere og zoome.</p></div>
+  <div class="map" style="height:280px;margin:6px 24px">
+    <svg class="grid" viewBox="0 0 100 80" preserveAspectRatio="none">
+      <path d="M-5 50 Q30 42 55 47 T105 40" stroke="#d8cdbb" stroke-width="1" fill="none"/>
+      <path d="M25 -5 Q30 34 42 52 T52 85" stroke="#e2d9c9" stroke-width="1" fill="none"/>
+    </svg>
+    ${state.locOn?'<div class="you" style="left:48%;top:52%"></div>':''}
+    ${BAKERIES.map((b,i)=>`<div class="pin ${b.score>=5.2?'top':''}" style="left:${b.x}%;top:${b.y}%" onclick="openBakery(${b.id})"></div>`).join('')}
+  </div>
+  <div class="list">${[...BAKERIES].sort((a,b)=>a.dist-b.dist).slice(0,3).map(b=>entryHTML(b,{dist:true})).join('')}</div>`;
+}
+
+function viewLogin(){
+  return `<div class="login">
+    <svg class="mk" viewBox="0 0 56 56" fill="none"><path d="${spiralPath(28,28,2.8,2,23,205)}" fill="none" stroke="#6f4a2f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <h2>Bli med i Bollr</h2>
+    <div class="login-tag">Finn og ranger Norges beste boller</div>
+    <p>Logg inn for å lagre bollene du har smakt og din egen ønskeliste. Vurderingene forblir anonyme for andre.</p>
+    <div class="sso">
+      <button onclick="login('Google')">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.9a5 5 0 01-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0012 23z"/><path fill="#FBBC05" d="M6 14.3a6.6 6.6 0 010-4.2V7.3H2.3a11 11 0 000 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 002.3 7.3L6 10.1c.9-2.6 3.2-4.7 6-4.7z"/></svg>
+        Fortsett med Google</button>
+      <button onclick="login('Apple')">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12.5c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.1-2.9.9-3.6.9s-1.9-.9-3.1-.8c-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8z"/></svg>
+        Fortsett med Apple</button>
+      <button onclick="login('Vipps')">
+        <span style="color:#ff5b24;font-weight:700">Vipps</span> Logg inn <span class="soon">senere</span></button>
+    </div>
+    <p class="fine">I forhåndsvisningen er innlogging bare på liksom.</p>
+  </div>`;
+}
+function login(p){
+  if(p==='Vipps'){toast('Vipps kommer senere');return;}
+  state.user={name:'Mats',provider:p};
+  document.getElementById('meBtn').textContent='M';
+  MY_TASTED=[1,2];
+  toast('Logget inn (demo)');go('profile');
+}
+function logout(){state.user=null;MY_TASTED=[];document.getElementById('meBtn').textContent='·';go('nearby');}
+
+function viewProfile(){
+  const tasted=BAKERIES.filter(b=>MY_TASTED.includes(b.id));
+  const wish=BAKERIES.filter(b=>b.wish);
+  const showList=state.tab==='tasted'?tasted:wish;
+  return `<div class="head">
+    <div class="ey">${esc(state.user.provider)} · demo</div>
+    <h1>Hei, ${esc(state.user.name)}</h1>
+    <p>Listene dine synkes mellom enhetene. Ingen ser hvem som ga hvilken score.</p>
+  </div>
+  <div class="seg">
+    <button class="${state.tab==='tasted'?'on':''}" onclick="setTab('tasted')">Smakt · ${tasted.length}</button>
+    <button class="${state.tab==='wish'?'on':''}" onclick="setTab('wish')">Ønskeliste · ${wish.length}</button>
+  </div>
+  ${showList.length?`<div class="list">${showList.map(b=>entryHTML(b,{dist:false})).join('')}</div>`
+    :`<div class="empty"><span class="serif">${state.tab==='tasted'?'Ingen boller ennå':'Ønskelista er tom'}</span><p>${state.tab==='tasted'?'Trykk + for å vurdere din første bolle.':'Trykk hjertet på et bakeri for å ta vare på det.'}</p></div>`}
+  <div style="padding:16px 24px"><button class="btn ghost" onclick="logout()">Logg ut</button></div>`;
+}
+function setTab(t){state.tab=t;render();}
+
+function openBakery(id){openRate(BAKERIES.find(b=>b.id===id));}
+function directions(id){toast('Åpner Google Maps → '+BAKERIES.find(b=>b.id===id).name);}
+function toggleWish(id){const b=BAKERIES.find(x=>x.id===id);b.wish=!b.wish;toast(b.wish?'Lagt i ønskelista':'Fjernet');render();}
+
+function openRate(b){
+  state.draft={};state.editing=b||null;
+  document.getElementById('sheet').innerHTML=`
+    <div class="grab"></div>
+    <h2>${b?esc(b.name):'Vurder en bolle'}</h2>
+    <div class="lead">${b?esc(b.place)+' · '+esc(b.type):'Legg til bakeriet og gi bollen poeng.'}</div>
+    ${b?'':`<div class="field"><label>Bakeri</label><input id="rName" placeholder="Navn på bakeri"></div>
+      <div class="field"><label>Sted</label><input id="rPlace" placeholder="By eller tettsted"></div>
+      <div class="field"><label>Type bolle</label><input id="rType" placeholder="Skillingsbolle, skolebolle …"></div>`}
+    <div id="critWrap"></div>
+    <div class="live"><span class="l">Din score</span><span class="v" id="liveV">–<small></small></span></div>
+    <div class="field"><label>Notat</label><textarea id="rNote" placeholder="Kardemomme? Sprø kant? Verdt en omvei?"></textarea></div>
+    <div class="anon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Vurderingen legges til fellesskapets snitt anonymt.</div>
+    <button class="btn" id="saveBtn" disabled onclick="saveRating()" style="margin-top:22px">Lagre vurdering</button>
+    ${state.user?'':'<button class="btn ghost" onclick="goLogin()">Logg inn for å lagre i mine lister</button>'}`;
+  buildCrit();openSheet();
+}
+function buildCrit(){
+  document.getElementById('critWrap').innerHTML=CRITERIA.map(c=>`
+    <div class="crit"><div class="t"><div class="cn">${c.name}<em>${c.hint}</em></div><div class="cv" id="cv_${c.key}">–</div></div>
+    <div class="scale">${[1,2,3,4,5,6].map(n=>`<button data-k="${c.key}" data-n="${n}" onclick="setDot('${c.key}',${n})">${n}</button>`).join('')}</div></div>`).join('');
+}
+function setDot(k,n){
+  state.draft[k]=n;
+  document.querySelectorAll(`[data-k="${k}"]`).forEach(x=>x.classList.toggle('on',+x.dataset.n===n));
+  document.getElementById('cv_'+k).textContent=n;
+  const s=scoreOf(state.draft);
+  document.getElementById('liveV').innerHTML=s?s.toFixed(2)+'<small> /6</small>':'–';
+  const named=state.editing||document.getElementById('rName')?.value.trim();
+  document.getElementById('saveBtn').disabled=!(s&&named);
+}
+function saveRating(){
+  const s=scoreOf(state.draft);let b=state.editing;
+  if(b){b.score=+(((b.score*b.count)+s)/(b.count+1)).toFixed(2);b.count++;if(state.user&&!MY_TASTED.includes(b.id))MY_TASTED.push(b.id);}
+  else{const name=document.getElementById('rName').value.trim();const id=Date.now();
+    b={id,name,place:document.getElementById('rPlace').value.trim(),type:document.getElementById('rType').value.trim()||'Bolle',score:+s.toFixed(2),count:1,dist:0.1,x:40+Math.random()*30,y:35+Math.random()*30,wish:false,lat:62.5,lng:7.7};
+    BAKERIES.push(b);if(state.user)MY_TASTED.push(id);}
+  closeSheet();toast('Vurderingen er lagret');go(state.editing?state.view:'top');
+}
+function goLogin(){closeSheet();go('profile');}
+function openSheet(){document.getElementById('scrim').classList.add('open');document.getElementById('sheet').classList.add('open');}
+function closeSheet(){document.getElementById('scrim').classList.remove('open');document.getElementById('sheet').classList.remove('open');}
+function enableLoc(){state.locOn=true;document.getElementById('locText').textContent='Posisjon på';document.getElementById('locLink').classList.add('hidden');toast('Posisjon aktivert (demo)');if(['nearby','map'].includes(state.view))render();}
+
+go('nearby');
+</script>
+</body>
+</html>
