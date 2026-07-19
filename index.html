@@ -424,19 +424,34 @@ function viewStats(){
   const approved=BAKERIES.filter(b=>b.count>0);
   const totalRatings=approved.reduce((s,b)=>s+b.count,0);
   const uniqueBakeriesCount=new Set(approved.map(b=>b.name)).size;
-  const avgScore=uniqueBakeriesCount?approved.reduce((s,b)=>s+(b.score??0),0)/approved.length:null;
+  const avgScore=totalRatings?approved.reduce((s,b)=>s+(b.score??0)*b.count,0)/totalRatings:null;
 
   const placeMap={};
-  approved.forEach(b=>{if(!placeMap[b.place])placeMap[b.place]={sum:0,n:0,ratings:0};placeMap[b.place].sum+=b.score??0;placeMap[b.place].n++;placeMap[b.place].ratings+=b.count;});
+  approved.forEach(b=>{
+    if(!placeMap[b.place])placeMap[b.place]={wsum:0,total:0,bakeries:new Set()};
+    placeMap[b.place].wsum+=(b.score??0)*b.count;
+    placeMap[b.place].total+=b.count;
+    placeMap[b.place].bakeries.add(b.name);
+  });
   const antallByer=Object.keys(placeMap).length;
-  const bestePlasser=Object.entries(placeMap).map(([p,v])=>({place:p,score:v.sum/v.n,bakeries:v.n,ratings:v.ratings})).sort((a,b)=>b.score-a.score).slice(0,3);
+  const bestePlasser=Object.entries(placeMap)
+    .filter(([,v])=>v.total>0)
+    .map(([p,v])=>({place:p,score:v.wsum/v.total,bakeries:v.bakeries.size,ratings:v.total}))
+    .sort((a,b)=>b.score-a.score).slice(0,3);
 
   const typeMap={};
-  approved.forEach(b=>{if(!typeMap[b.type])typeMap[b.type]={sum:0,n:0};typeMap[b.type].sum+=b.score??0;typeMap[b.type].n++;});
-  const besteTyper=Object.entries(typeMap).map(([t,v])=>({type:t,score:v.sum/v.n,n:v.n})).sort((a,b)=>b.score-a.score).slice(0,3);
+  approved.forEach(b=>{
+    if(!typeMap[b.type])typeMap[b.type]={wsum:0,total:0};
+    typeMap[b.type].wsum+=(b.score??0)*b.count;
+    typeMap[b.type].total+=b.count;
+  });
+  const besteTyper=Object.entries(typeMap)
+    .filter(([,v])=>v.total>0)
+    .map(([t,v])=>({type:t,score:v.wsum/v.total,n:v.total}))
+    .sort((a,b)=>b.score-a.score).slice(0,3);
 
   const plasseListe=bestePlasser.map((p,i)=>`
-    <div class="entry" style="cursor:default">
+    <div class="entry" onclick="openPlaceDetail('${esc(p.place)}')">
       <span class="rank">${String(i+1).padStart(2,'0')}</span>
       <div class="body"><h3 style="font-size:17px">${esc(p.place)}</h3>
         <div class="meta">${p.bakeries} ${p.bakeries===1?'bakeri':'bakerier'} · ${p.ratings} vurderinger</div>
@@ -445,10 +460,10 @@ function viewStats(){
     </div>`).join('');
 
   const typeListe=besteTyper.map((t,i)=>`
-    <div class="entry" style="cursor:default">
+    <div class="entry" onclick="openTypeDetail('${esc(t.type)}')">
       <span class="rank">${String(i+1).padStart(2,'0')}</span>
       <div class="body"><h3 style="font-size:17px">${esc(t.type)}</h3>
-        <div class="meta">${t.n} ${t.n===1?'bakeri':'bakerier'}</div>
+        <div class="meta">${t.n} vurderinger</div>
       </div>
       <div class="rgt"><div class="score">${t.score.toFixed(2)}<small> /5</small></div></div>
     </div>`).join('');
@@ -466,8 +481,45 @@ function viewStats(){
       <div class="stat-box"><div class="sv">${avgScore!=null?avgScore.toFixed(2):'–'}</div><div class="sl">Snittkarakter</div></div>
     </div>
   </div>
-  ${bestePlasser.length?`<div class="sec"><div class="ey">Beste byer</div></div><div class="list">${plasseListe}</div>`:''}
-  ${besteTyper.length?`<div class="sec"><div class="ey">Beste bolletyper</div></div><div class="list">${typeListe}</div>`:''}`}`;
+  ${besteTyper.length?`<div class="sec"><div class="ey">Beste bolletyper</div></div><div class="list">${typeListe}</div>`:''}
+  ${bestePlasser.length?`<div class="sec"><div class="ey">Beste byer</div></div><div class="list">${plasseListe}</div>`:''}`}`;
+}
+
+async function openTypeDetail(type){
+  openSheet();
+  document.getElementById('sheet').innerHTML=`<div class="grab"></div><div style="padding:24px"><p style="color:var(--stone);font-size:13px">Laster …</p></div>`;
+  const {data,error}=await db.rpc('get_type_ratings',{p_type:type});
+  if(error||!data){document.getElementById('sheet').innerHTML=`<div class="grab"></div><div style="padding:24px"><p style="color:var(--stone)">Kunne ikke laste vurderinger.</p></div>`;return;}
+  const rows=data.map(r=>`
+    <div style="padding:16px 0;border-bottom:1px solid var(--hair-2)">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div>
+          <div style="font-family:'Fraunces',serif;font-size:17px;font-weight:400">${esc(r.bakery_name)}</div>
+          <div style="font-size:12px;color:var(--stone);margin-top:2px">${esc(r.bakery_place)}</div>
+        </div>
+        <div class="score" style="flex-shrink:0">${Number(r.score).toFixed(2)}<small> /5</small></div>
+      </div>
+      ${r.note?`<p style="font-size:13px;color:var(--stone);font-style:italic;margin-top:8px;line-height:1.5">"${esc(r.note)}"</p>`:''}
+    </div>`).join('');
+  document.getElementById('sheet').innerHTML=`
+    <div class="grab"></div>
+    <div style="padding:24px 24px 40px">
+      <h2 style="font-family:'Fraunces',serif;font-size:26px;font-weight:300;margin-bottom:4px">${esc(type)}</h2>
+      <p style="font-size:13px;color:var(--stone);margin-bottom:20px">${data.length} vurderinger · sortert etter score</p>
+      ${rows}
+    </div>`;
+}
+
+function openPlaceDetail(place){
+  const bakeries=BAKERIES.filter(b=>b.place===place&&b.count>0).sort((a,b)=>(b.score??-1)-(a.score??-1));
+  openSheet();
+  document.getElementById('sheet').innerHTML=`
+    <div class="grab"></div>
+    <div style="padding:24px 24px 0">
+      <h2 style="font-family:'Fraunces',serif;font-size:26px;font-weight:300;margin-bottom:4px">${esc(place)}</h2>
+      <p style="font-size:13px;color:var(--stone);margin-bottom:4px">${bakeries.length} ${bakeries.length===1?'bakeri':'bakerier'}</p>
+    </div>
+    <div class="list">${bakeries.map((b,i)=>entryHTML(b,{rank:i+1})).join('')}</div>`;
 }
 
 // ─── Detaljside ───────────────────────────────────────────
