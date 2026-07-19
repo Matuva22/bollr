@@ -210,6 +210,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+const HERE_KEY      = 'AxcJQdzhKwdDq-63xliqrYSNOSfRx28Ydcc22EQgoaY';
 const SUPABASE_URL  = 'https://zijxangdvhpghzracztf.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppanhhbmdkdmhwZ2h6cmFjenRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MzAxOTUsImV4cCI6MjEwMDAwNjE5NX0.Cp4QW3q0c-VdylRZhgrFP0OhQkbQaf-X5hEKCPjOQxQ';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -231,7 +232,8 @@ document.getElementById('brandMark').innerHTML=
 const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor størrelse','Autentisk','Nybakt','God pris','Sterk kardemomme','Klassisk','Nyskapende'];
 
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set();
-let state={view:'top',user:null,draft:{score:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
+let state={view:'top',user:null,draft:{score:null,note:'',photoFile:null,photoUrl:null,tags:[],lat:null,lng:null},editing:null};
+let _hereResults=[], _searchTimer=null;
 let searchQ='', filterType='';
 let _ready=false;
 const myRatingStore={};
@@ -561,13 +563,57 @@ async function uploadPhoto(file,bakeryId){
 
 function updateBakerySearch(q){
   updateSaveBtn();
-  const el=document.getElementById('bakerySuggestions');if(!el)return;
-  const matches=q.length>1?BAKERIES.filter(b=>b.name.toLowerCase().includes(q.toLowerCase())||b.place.toLowerCase().includes(q.toLowerCase())).slice(0,5):[];
-  if(matches.length){
-    el.innerHTML=`<div class="suggest-hint">Finnes allerede — velg for å vurdere:</div>`+
-      matches.map(b=>`<div class="suggest-item" onclick="switchToExisting('${b.id}')">${esc(b.name)}<span>${esc(b.place)}</span></div>`).join('');
-    el.style.display='block';
-  }else{el.style.display='none';}
+  clearTimeout(_searchTimer);
+  const el=document.getElementById('bakerySuggestions');
+  if(!el)return;
+  if(q.length<2){el.style.display='none';return;}
+  _searchTimer=setTimeout(()=>_doPlaceSearch(q),350);
+}
+
+async function _doPlaceSearch(q){
+  const el=document.getElementById('bakerySuggestions');
+  if(!el)return;
+
+  const existing=BAKERIES.filter(b=>
+    b.name.toLowerCase().includes(q.toLowerCase())||
+    b.place.toLowerCase().includes(q.toLowerCase())
+  ).slice(0,3);
+
+  try{
+    const res=await fetch(`https://discover.search.hereapi.com/v1/discover?in=countryCode:NOR&q=${encodeURIComponent(q)}&limit=6&lang=no&apikey=${HERE_KEY}`);
+    const data=await res.json();
+    _hereResults=data.items||[];
+  }catch(e){_hereResults=[];}
+
+  let html='';
+  if(existing.length){
+    html+=`<div class="suggest-hint">Finnes allerede i Bollr:</div>`+
+      existing.map(b=>`<div class="suggest-item" onclick="switchToExisting('${b.id}')">${esc(b.name)}<span>${esc(b.place)}</span></div>`).join('');
+  }
+  if(_hereResults.length){
+    html+=`<div class="suggest-hint" ${existing.length?'style="border-top:1px solid var(--hair-2)"':''}>Velg bakeri:</div>`+
+      _hereResults.map((item,i)=>{
+        const city=item.address?.city||item.address?.county||'';
+        const street=[item.address?.street,item.address?.houseNumber].filter(Boolean).join(' ');
+        const sub=[street,item.address?.postalCode,city].filter(Boolean).join(', ');
+        return`<div class="suggest-item" onclick="selectHerePlace(${i})">${esc(item.title)}<span>${esc(sub)}</span></div>`;
+      }).join('');
+  }
+
+  if(html){el.innerHTML=html;el.style.display='block';}
+  else{el.style.display='none';}
+}
+
+function selectHerePlace(i){
+  const item=_hereResults[i];if(!item)return;
+  const nameEl=document.getElementById('rName');
+  const placeEl=document.getElementById('rPlace');
+  if(nameEl)nameEl.value=item.title;
+  if(placeEl)placeEl.value=item.address?.city||item.address?.county||'';
+  state.draft.lat=item.position?.lat||null;
+  state.draft.lng=item.position?.lng||null;
+  document.getElementById('bakerySuggestions').style.display='none';
+  updateSaveBtn();
 }
 
 function switchToExisting(id){closeSheet();setTimeout(()=>openBakery(id),60);}
@@ -586,6 +632,8 @@ async function saveRating(){
       name,
       place:document.getElementById('rPlace')?.value.trim()||'Ukjent',
       type:document.getElementById('rType')?.value.trim()||'Bolle',
+      lat:state.draft.lat||null,
+      lng:state.draft.lng||null,
     }).select('id').single();
     if(error){toast('Kunne ikke lagre bakeri');return;}
     bakeryId=data.id;
