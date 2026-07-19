@@ -428,6 +428,11 @@ function shareBakery(id){
 
 // ─── Vurderingsskjema ─────────────────────────────────────────────────────────
 function openRate(b,existingRating=null){
+  if(!state.user){
+    toast('Du må logge inn for å registrere en bolle');
+    setTimeout(()=>go('profile'),800);
+    return;
+  }
   state.draft=existingRating?{
     smak:existingRating.smak||0,saft:existingRating.saft||0,deig:existingRating.deig||0,
     fyll:existingRating.fyll||0,sodme:existingRating.sodme||0,
