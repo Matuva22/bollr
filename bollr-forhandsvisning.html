@@ -657,6 +657,8 @@ function renderBolleTypeSection(){
 async function saveRating(){
   if(!state.user){closeSheet();go('profile');return;}
   if(state.draft.score==null){toast('Sett en score først');return;}
+  const btn=document.getElementById('saveBtn');
+  if(btn){btn.disabled=true;btn.textContent='Lagrer …';}
 
   let bakeryId;
   if(state.editing){
@@ -694,7 +696,7 @@ async function saveRating(){
   };
   if(state.draft.tags.length)payload.tags=state.draft.tags;
   const {error}=await db.from('ratings').upsert(payload,{onConflict:'bakery_id,user_id'});
-  if(error){toast('Kunne ikke lagre vurdering');return;}
+  if(error){toast('Kunne ikke lagre vurdering');if(btn){btn.disabled=false;btn.textContent='Lagre vurdering';}return;}
 
   MY_TASTED.add(bakeryId);
   closeSheet();toast('Vurderingen er lagret');
@@ -783,8 +785,35 @@ function viewProfile(){
 }
 
 // ─── Sheet ────────────────────────────────────────────────
-function openSheet(){document.getElementById('scrim').classList.add('open');document.getElementById('sheet').classList.add('open');}
-function closeSheet(){document.getElementById('scrim').classList.remove('open');document.getElementById('sheet').classList.remove('open');}
+function openSheet(){const s=document.getElementById('sheet');s.scrollTop=0;s.style.transform='';s.style.transition='';s.classList.add('open');document.getElementById('scrim').classList.add('open');}
+function closeSheet(){const s=document.getElementById('sheet');s.style.transform='';s.style.transition='';s.classList.remove('open');document.getElementById('scrim').classList.remove('open');}
+
+// ─── Swipe-to-close ───────────────────────────────────────
+(function(){
+  const sheet=document.getElementById('sheet');
+  let startY=0,dragging=false;
+  sheet.addEventListener('touchstart',e=>{
+    startY=e.touches[0].clientY;
+    dragging=sheet.scrollTop===0;
+  },{passive:true});
+  sheet.addEventListener('touchmove',e=>{
+    if(!dragging)return;
+    const dy=e.touches[0].clientY-startY;
+    if(dy>0){sheet.style.transform=`translateY(${dy}px)`;sheet.style.transition='none';}
+  },{passive:true});
+  sheet.addEventListener('touchend',e=>{
+    if(!dragging){dragging=false;return;}
+    const dy=e.changedTouches[0].clientY-startY;
+    dragging=false;
+    if(dy>100){
+      sheet.style.transition='transform .25s ease';
+      sheet.style.transform='translateY(100%)';
+      setTimeout(()=>closeSheet(),250);
+    }else{
+      sheet.style.transform='';sheet.style.transition='';
+    }
+  },{passive:true});
+})();
 
 // ─── Init ─────────────────────────────────────────────────
 async function init(){await loadBakeries();_ready=true;go('top');}
