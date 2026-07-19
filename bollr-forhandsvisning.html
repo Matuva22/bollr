@@ -148,6 +148,9 @@
   .sso button svg{width:18px;height:18px}
   .sso .soon{margin-left:auto;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--stone)}
   .login .fine{font-size:11px;color:var(--stone);margin-top:20px;line-height:1.5}
+  .email-divider{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--stone);text-align:center;margin:20px 0 16px;position:relative}
+  .email-divider::before,.email-divider::after{content:"";position:absolute;top:50%;width:28%;height:1px;background:var(--hair)}
+  .email-divider::before{left:0}.email-divider::after{right:0}
 
   .seg{display:flex;border-bottom:1px solid var(--hair);margin:6px 24px 0}
   .seg button{flex:1;background:none;border:none;padding:14px 0;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:var(--stone);cursor:pointer;position:relative;font-family:'Inter'}
@@ -278,9 +281,16 @@ db.auth.onAuthStateChange(async(_ev,session)=>{
 });
 
 async function login(p){
-  if(p==='Vipps'){toast('Vipps kommer senere');return;}
   const {error}=await db.auth.signInWithOAuth({provider:p.toLowerCase(),options:{redirectTo:location.href.split('?')[0].split('#')[0]}});
   if(error)toast('Innlogging feilet');
+}
+
+async function loginEmail(){
+  const email=document.getElementById('emailInput')?.value.trim();
+  if(!email){toast('Skriv inn e-postadressen din');return;}
+  const {error}=await db.auth.signInWithOtp({email,options:{emailRedirectTo:location.href.split('?')[0].split('#')[0]}});
+  if(error){toast('Kunne ikke sende e-post');return;}
+  toast('Sjekk innboksen — lenke er sendt!');
 }
 async function logout(){await db.auth.signOut();go('top');}
 
@@ -569,12 +579,14 @@ function viewLogin(){
       <button onclick="login('Google')">
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.9a5 5 0 01-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0012 23z"/><path fill="#FBBC05" d="M6 14.3a6.6 6.6 0 010-4.2V7.3H2.3a11 11 0 000 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 002.3 7.3L6 10.1c.9-2.6 3.2-4.7 6-4.7z"/></svg>
         Fortsett med Google</button>
-      <button onclick="login('Apple')">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12.5c0-2.5 2-3.7 2.1-3.8-1.1-1.7-2.9-1.9-3.5-1.9-1.5-.1-2.9.9-3.6.9s-1.9-.9-3.1-.8c-1.6 0-3 .9-3.8 2.3-1.6 2.8-.4 7 1.2 9.3.8 1.1 1.7 2.4 2.9 2.3 1.2 0 1.6-.7 3-.7s1.8.7 3 .7c1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1 0-2.5-1-2.5-3.8z"/></svg>
-        Fortsett med Apple</button>
-      <button onclick="login('Vipps')"><span style="color:#ff5b24;font-weight:700">Vipps</span> Logg inn <span class="soon">kommer</span></button>
     </div>
-    <p class="fine">Vurderinger fra alle brukere er anonyme — ingen ser hvem som scoret hva.</p>
+    <div class="email-divider">eller logg inn med e-post</div>
+    <div class="field" style="text-align:left">
+      <label>E-post</label>
+      <input type="email" id="emailInput" placeholder="din@epost.no" autocomplete="email">
+    </div>
+    <button class="btn" onclick="loginEmail()" style="margin-top:4px">Send innloggingslenke</button>
+    <p class="fine">Du får en lenke på e-post — ingen passord nødvendig. Vurderinger er anonyme.</p>
   </div>`;
 }
 
