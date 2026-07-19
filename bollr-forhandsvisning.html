@@ -191,8 +191,11 @@
   <button class="plus" onclick="openRate()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
   </button>
-  <button id="nav-lists" onclick="go('profile')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M5 12h14M5 17h9"/></svg>Mitt
+  <button id="nav-smaksliste" class="hidden" onclick="go('smaksliste')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>Smaksliste
+  </button>
+  <button id="nav-profile" onclick="go('profile')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Mitt
   </button>
 </div>
 
@@ -270,12 +273,14 @@ db.auth.onAuthStateChange(async(_ev,session)=>{
     state.user=session.user;
     state.user.name=(session.user.user_metadata?.full_name||session.user.email||'Bruker').split(' ')[0];
     document.getElementById('meBtn').textContent=state.user.name[0].toUpperCase();
+    document.getElementById('nav-smaksliste')?.classList.remove('hidden');
     await loadUserData();
     BAKERIES.forEach(b=>b.wish=MY_WISHLIST.has(b.id));
   }else{
     state.user=null;MY_TASTED=new Set();MY_WISHLIST=new Set();
     BAKERIES.forEach(b=>b.wish=false);
     document.getElementById('meBtn').textContent='·';
+    document.getElementById('nav-smaksliste')?.classList.add('hidden');
   }
   if(_ready)render();
 });
@@ -298,12 +303,14 @@ async function logout(){await db.auth.signOut();go('top');}
 function go(v){
   state.view=v;
   document.getElementById('nav-top')?.classList.toggle('on',v==='top');
-  document.getElementById('nav-lists')?.classList.toggle('on',v==='profile');
+  document.getElementById('nav-smaksliste')?.classList.toggle('on',v==='smaksliste');
+  document.getElementById('nav-profile')?.classList.toggle('on',v==='profile');
   render();window.scrollTo(0,0);
 }
 function render(){
   const v=document.getElementById('views');
   if(state.view==='top')v.innerHTML=viewTop();
+  else if(state.view==='smaksliste')v.innerHTML=state.user?viewSmaksliste():viewLogin();
   else v.innerHTML=state.user?viewProfile():viewLogin();
 }
 
@@ -592,7 +599,6 @@ function viewLogin(){
 function viewProfile(){
   const tasted=BAKERIES.filter(b=>MY_TASTED.has(b.id));
   const wish=BAKERIES.filter(b=>b.wish);
-  const showList=state.tab==='tasted'?tasted:wish;
   const provider=(state.user.app_metadata?.provider||'bruker');
   const providerLabel=provider.charAt(0).toUpperCase()+provider.slice(1);
 
@@ -604,14 +610,11 @@ function viewProfile(){
   return`<div class="head">
     <div class="ey">${esc(providerLabel)} · Bollr</div>
     <h1>Hei, ${esc(state.user.name)}</h1>
-    <p>Listene dine synkes mellom enhetene. Ingen ser hvem som ga hvilken score.</p>
+    <p>Ingen ser hvem som ga hvilken score.</p>
   </div>
-  <div class="seg">
-    <button class="${state.tab==='tasted'?'on':''}" onclick="setTab('tasted')">Smakt · ${tasted.length}</button>
-    <button class="${state.tab==='wish'?'on':''}" onclick="setTab('wish')">Smaksliste · ${wish.length}</button>
-  </div>
-  ${showList.length?`<div class="list">${showList.map(b=>entryHTML(b)).join('')}</div>`
-    :`<div class="empty"><span class="serif">${state.tab==='tasted'?'Ingen boller ennå':'Smakslista er tom'}</span><p>${state.tab==='tasted'?'Trykk + for å vurdere din første bolle.':'Trykk hjertet på et bakeri for å legge det til.'}</p></div>`}
+  ${tasted.length
+    ?`<div class="list">${tasted.map(b=>entryHTML(b)).join('')}</div>`
+    :`<div class="empty"><span class="serif">Ingen boller ennå</span><p>Trykk + for å vurdere din første bolle.</p></div>`}
   <div class="stats">
     <div class="ey">Din statistikk</div>
     <div class="stat-grid">
@@ -625,6 +628,17 @@ function viewProfile(){
 }
 
 function setTab(t){state.tab=t;render();}
+
+function viewSmaksliste(){
+  const wish=BAKERIES.filter(b=>b.wish);
+  return`<div class="head">
+    <h1>Smaksliste</h1>
+    <p>Bakerier du vil besøke.</p>
+  </div>
+  ${wish.length
+    ?`<div class="list">${wish.map(b=>entryHTML(b)).join('')}</div>`
+    :`<div class="empty"><span class="serif">Smakslista er tom</span><p>Trykk hjertet på et bakeri for å legge det til.</p></div>`}`;
+}
 
 // ─── Sheet ────────────────────────────────────────────────────────────────────
 function openSheet(){
