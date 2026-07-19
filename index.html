@@ -4,11 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
 <meta name="theme-color" content="#141210">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="bollr-pakke/bollr-pakke/icon-180.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Bollr">
 <title>Bollr</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Inter:wght@400;500;600&display=swap');
@@ -933,7 +928,7 @@ function viewLogin(){
     <button class="btn" onclick="loginEmail()" style="margin-top:4px">Send innloggingslenke</button>
     <p class="fine">Du får en lenke på e-post — ingen passord nødvendig.</p>
   </div>
-  ${installHTML()}`;
+  `;
 }
 
 function viewProfile(){
@@ -960,7 +955,6 @@ function viewProfile(){
   ${tasted.length?`<div class="sec"><div class="ey">Mine vurderinger</div></div><div class="list">${tasted.map(b=>entryHTML(b,{pending:MY_PENDING.has(b.id)})).join('')}</div>`
     :`<div class="empty"><span class="serif">Ingen boller ennå</span><p>Trykk + for å vurdere din første bolle.</p></div>`}
   ${_pendingRatings!==null?viewAdmin():''}
-  ${installHTML()}
   <div style="padding:16px 24px"><button class="btn ghost" onclick="logout()">Logg ut</button></div>`;
 }
 
@@ -994,20 +988,6 @@ function closeSheet(){const s=document.getElementById('sheet');s.style.transform
     }
   },{passive:true});
 })();
-
-// ─── Installer PWA ────────────────────────────────────────
-function installHTML(){
-  if(window.navigator.standalone)return'';
-  const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;
-  const isAndroid=/android/i.test(navigator.userAgent);
-  let tip='';
-  if(isIOS)tip='I Safari: trykk på Del-knappen <b>⎙</b> nederst, deretter <b>Legg til på hjem-skjermen</b>.';
-  else if(isAndroid)tip='I Chrome: trykk på menyen <b>⋮</b> øverst til høyre, deretter <b>Legg til på startskjermen</b>.';
-  else tip='Åpne Bollr i mobilnettleseren din for å legge den til på hjemskjermen.';
-  return`<div class="stats" style="border-top:1px solid var(--hair-2);margin-top:8px">
-    <div class="ey" style="margin-bottom:10px">Installer som app</div>
-    <p style="font-size:13px;color:var(--stone);line-height:1.6">${tip}</p>
-  </div>`;
 
 // ─── Init ─────────────────────────────────────────────────
 async function init(){await loadBakeries();_ready=true;go('top');}
