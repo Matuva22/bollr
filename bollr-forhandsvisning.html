@@ -318,7 +318,6 @@ function viewTop(){
   const recent=[...BAKERIES].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);
 
   return`<div class="head">
-    <div class="ey">Hele Norge · anonymt</div>
     <h1>Norges beste boller</h1>
     <p>Kåret av fellesskapet, rangert på anonyme snitt.</p>
     <div class="meta-line">${BAKERIES.length} bakerier · ${totalRatings} vurderinger</div>
