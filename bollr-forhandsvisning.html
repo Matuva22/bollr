@@ -326,7 +326,12 @@ function viewTop(){
     <div class="list">${recent.map(b=>entryHTML(b)).join('')}</div>`:''}`;
 }
 
-function setSearch(q){searchQ=q.toLowerCase().trim();render();}
+function setSearch(q){
+  searchQ=q.toLowerCase().trim();
+  render();
+  const input=document.querySelector('.search-wrap input');
+  if(input){input.focus();const l=input.value.length;input.setSelectionRange(l,l);}
+}
 function setFilter(t){filterType=t;render();}
 
 function entryHTML(b,opts={}){
