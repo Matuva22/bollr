@@ -31,6 +31,11 @@
   .head h1{font-family:'Fraunces',serif;font-weight:300;font-size:32px;letter-spacing:0;margin-top:8px;line-height:1.08}
   .head p{font-size:13.5px;color:var(--stone);margin-top:10px;line-height:1.6;max-width:340px}
   .head .meta-line{font-size:11px;color:var(--stone);margin-top:8px;letter-spacing:.04em}
+  .global-stats{display:flex;gap:10px;padding:12px 24px 0;overflow-x:auto;scrollbar-width:none}
+  .global-stats::-webkit-scrollbar{display:none}
+  .gstat{background:var(--melis-2);border-radius:3px;padding:10px 14px;flex-shrink:0;min-width:110px}
+  .gstat .gv{font-family:'Fraunces',serif;font-size:15px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px}
+  .gstat .gl{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--stone);margin-top:3px}
 
   .search-wrap{padding:14px 24px 0}
   .search-wrap input{width:100%;border:1px solid var(--hair);border-radius:3px;padding:10px 14px;font-size:14px;font-family:'Inter';background:var(--melis-2);color:var(--kard)}
@@ -176,7 +181,7 @@
       <svg viewBox="0 0 30 30" fill="none" id="brandMark"></svg>
       <span class="lockup">
         <span class="wm">boll<b>r</b></span>
-        <span class="tag">Finn og ranger boller</span>
+        <span class="tag">For deg som tar boller på alvor</span>
       </span>
     </div>
     <button class="me" id="meBtn" onclick="go('profile')">·</button>
@@ -324,12 +329,33 @@ function viewTop(){
   const totalRatings=BAKERIES.reduce((s,b)=>s+b.count,0);
   const recent=[...BAKERIES].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);
 
+  // Globale stats
+  const placeMap={};
+  BAKERIES.forEach(b=>{if(!b.score)return;if(!placeMap[b.place])placeMap[b.place]={sum:0,n:0};placeMap[b.place].sum+=b.score;placeMap[b.place].n++;});
+  const bestPlace=Object.entries(placeMap).sort((a,b)=>b[1].sum/b[1].n-a[1].sum/a[1].n)[0];
+
+  const typeRating={};
+  BAKERIES.forEach(b=>{if(!b.score)return;if(!typeRating[b.type])typeRating[b.type]={sum:0,n:0};typeRating[b.type].sum+=b.score;typeRating[b.type].n++;});
+  const bestType=Object.entries(typeRating).sort((a,b)=>b[1].sum/b[1].n-a[1].sum/a[1].n)[0];
+
+  const typeCount={};
+  BAKERIES.forEach(b=>{typeCount[b.type]=(typeCount[b.type]||0)+b.count;});
+  const popType=Object.entries(typeCount).sort((a,b)=>b[1]-a[1])[0];
+
+  const globalStats=BAKERIES.length?`<div class="global-stats">
+    <div class="gstat"><div class="gv">${BAKERIES.length}</div><div class="gl">Bakerier</div></div>
+    <div class="gstat"><div class="gv">${totalRatings}</div><div class="gl">Vurderinger</div></div>
+    ${bestPlace?`<div class="gstat"><div class="gv">${esc(bestPlace[0])}</div><div class="gl">Beste by</div></div>`:''}
+    ${bestType?`<div class="gstat"><div class="gv">${esc(bestType[0])}</div><div class="gl">Beste type</div></div>`:''}
+    ${popType?`<div class="gstat"><div class="gv">${esc(popType[0])}</div><div class="gl">Mest vurdert</div></div>`:''}
+  </div>`:'';
+
   return`<div class="head">
     <h1>Norges beste boller</h1>
-    <p>For deg som tar boller på alvor.</p>
-    <div class="meta-line">${BAKERIES.length} bakerier · ${totalRatings} vurderinger</div>
+    <p>Finn og ranger Norges beste boller.</p>
   </div>
-  <div class="search-wrap"><input type="search" placeholder="Søk bakeri eller sted …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
+  ${globalStats}
+  <div class="search-wrap" style="padding-top:16px"><input type="search" placeholder="Søk bakeri eller sted …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
   <div class="chips">
     <button class="chip ${!filterType?'on':''}" onclick="setFilter('')">Alle</button>
     ${types.map(t=>`<button class="chip ${filterType===t?'on':''}" onclick="setFilter('${esc(t)}')">${esc(t)}</button>`).join('')}
@@ -477,7 +503,6 @@ function openRate(b,existingRating=null){
     <div id="critWrap"></div>
     <div class="live"><span class="l">Din score</span><span class="v" id="liveV">–<small></small></span></div>
     <div class="field"><label>Notat</label><textarea id="rNote" placeholder="Kardemomme? Sprø kant? Verdt en omvei?">${esc(state.existingNote)}</textarea></div>
-    <div class="anon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.6"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>Vurderingen legges til fellesskapets snitt anonymt.</div>
     <button class="btn" id="saveBtn" disabled onclick="saveRating()" style="margin-top:22px">${btnLabel}</button>`;
   buildCrit();
   openSheet();
@@ -580,7 +605,7 @@ function viewLogin(){
     <svg class="mk" viewBox="0 0 56 56" fill="none"><path d="${spiralPath(28,28,2.8,2,23,205)}" fill="none" stroke="#6f4a2f" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
     <h2>Bli med i Bollr</h2>
     <div class="login-tag">Finn og ranger Norges beste boller</div>
-    <p>Logg inn for å lagre bollene du har smakt og din egen ønskeliste. Vurderingene forblir anonyme.</p>
+    <p>Logg inn for å lagre bollene du har smakt og din egen smaksliste.</p>
     <div class="sso">
       <button onclick="login('Google')">
         <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.5 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.9a5 5 0 01-2.2 3.3v2.7h3.6c2.1-1.9 3.2-4.8 3.2-7.8z"/><path fill="#34A853" d="M12 23c2.9 0 5.4-1 7.2-2.6l-3.6-2.7c-1 .7-2.3 1.1-3.6 1.1-2.8 0-5.1-1.9-6-4.4H2.3v2.8A11 11 0 0012 23z"/><path fill="#FBBC05" d="M6 14.3a6.6 6.6 0 010-4.2V7.3H2.3a11 11 0 000 9.8z"/><path fill="#EA4335" d="M12 5.4c1.6 0 3 .5 4.1 1.6l3.1-3.1A11 11 0 002.3 7.3L6 10.1c.9-2.6 3.2-4.7 6-4.7z"/></svg>
@@ -592,7 +617,7 @@ function viewLogin(){
       <input type="email" id="emailInput" placeholder="din@epost.no" autocomplete="email">
     </div>
     <button class="btn" onclick="loginEmail()" style="margin-top:4px">Send innloggingslenke</button>
-    <p class="fine">Du får en lenke på e-post — ingen passord nødvendig. Vurderinger er anonyme.</p>
+    <p class="fine">Du får en lenke på e-post — ingen passord nødvendig.</p>
   </div>`;
 }
 
@@ -602,15 +627,16 @@ function viewProfile(){
   const provider=(state.user.app_metadata?.provider||'bruker');
   const providerLabel=provider.charAt(0).toUpperCase()+provider.slice(1);
 
-  const avgMyScore=tasted.length?(tasted.reduce((s,b)=>s+b.score,0)/tasted.length).toFixed(1):'–';
+  const tastedScored=tasted.filter(b=>b.score);
+  const avgMyScore=tastedScored.length?(tastedScored.reduce((s,b)=>s+b.score,0)/tastedScored.length).toFixed(1):'–';
   const typeCounts={};
   tasted.forEach(b=>{typeCounts[b.type]=(typeCounts[b.type]||0)+1;});
   const favType=Object.entries(typeCounts).sort((a,b)=>b[1]-a[1])[0]?.[0]||'–';
+  const topBakery=tastedScored.sort((a,b)=>b.score-a.score)[0];
+  const uniquePlaces=new Set(tasted.map(b=>b.place)).size;
 
   return`<div class="head">
-    <div class="ey">${esc(providerLabel)} · Bollr</div>
     <h1>Hei, ${esc(state.user.name)}</h1>
-    <p>Ingen ser hvem som ga hvilken score.</p>
   </div>
   ${tasted.length
     ?`<div class="list">${tasted.map(b=>entryHTML(b)).join('')}</div>`
@@ -620,8 +646,9 @@ function viewProfile(){
     <div class="stat-grid">
       <div class="stat-box"><div class="sv">${tasted.length}</div><div class="sl">bakerier smakt</div></div>
       <div class="stat-box"><div class="sv">${avgMyScore}</div><div class="sl">snittkarakter</div></div>
+      <div class="stat-box"><div class="sv">${uniquePlaces||'–'}</div><div class="sl">steder besøkt</div></div>
       <div class="stat-box"><div class="sv">${wish.length}</div><div class="sl">på smakslista</div></div>
-      <div class="stat-box"><div class="sv" style="font-size:16px;padding-top:6px">${esc(favType)}</div><div class="sl">favorittbolle</div></div>
+      <div class="stat-box" style="grid-column:span 2"><div class="sv" style="font-size:13px;padding-top:2px">${topBakery?esc(topBakery.name):'–'}</div><div class="sl">din beste bolle${topBakery?' · '+topBakery.score.toFixed(1)+'/6':''}</div></div>
     </div>
   </div>
   <div style="padding:16px 24px"><button class="btn ghost" onclick="logout()">Logg ut</button></div>`;
