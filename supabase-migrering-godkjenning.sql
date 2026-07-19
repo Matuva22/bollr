@@ -6,6 +6,9 @@
 ALTER TABLE ratings ADD COLUMN IF NOT EXISTS tags text[] DEFAULT '{}';
 ALTER TABLE ratings ADD COLUMN IF NOT EXISTS approved boolean NOT NULL DEFAULT false;
 
+-- Godkjenn alle eksisterende vurderinger (lagt inn før modereringssystemet)
+UPDATE ratings SET approved = true WHERE approved = false;
+
 -- Oppdater bakery_averages() til å bare telle godkjente vurderinger
 CREATE OR REPLACE FUNCTION bakery_averages()
 RETURNS TABLE (

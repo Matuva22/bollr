@@ -311,15 +311,16 @@ function viewTop(){
   let list=[...BAKERIES];
   if(searchQ)list=list.filter(b=>b.name.toLowerCase().includes(searchQ)||b.place.toLowerCase().includes(searchQ));
   if(filterType)list=list.filter(b=>b.type===filterType);
-  const ranked=[...list].sort((a,b)=>(b.score??-1)-(a.score??-1));
-  const types=[...new Set(BAKERIES.map(b=>b.type))].sort();
-  const recent=[...BAKERIES].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);
-  const totalRatings=BAKERIES.reduce((s,b)=>s+b.count,0);
+  const approved=BAKERIES.filter(b=>b.count>0);
+  const ranked=[...list].filter(b=>b.count>0).sort((a,b)=>(b.score??-1)-(a.score??-1));
+  const types=[...new Set(approved.map(b=>b.type))].sort();
+  const recent=[...approved].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,4);
+  const totalRatings=approved.reduce((s,b)=>s+b.count,0);
 
   return`<div class="head">
     <h1>Norges beste boller</h1>
     <p>Finn og ranger Norges beste boller.</p>
-    <div class="meta-line">${BAKERIES.length} bakerier · ${totalRatings} vurderinger</div>
+    <div class="meta-line">${approved.length} bakerier · ${totalRatings} vurderinger</div>
   </div>
   <div class="search-wrap"><input type="search" placeholder="Søk bakeri eller sted …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
   <div class="chips">
