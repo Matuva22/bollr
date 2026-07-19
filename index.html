@@ -817,9 +817,9 @@ function viewProfile(){
   <div class="stats" style="border-top:none;margin-top:0;padding-top:0">
     <div class="ey">Din statistikk</div>
     <div class="stat-grid">
-      <div class="stat-box"><div class="sv">${tasted.length}</div><div class="sl">bakerier smakt</div></div>
+      <div class="stat-box"><div class="sv">${tasted.length}</div><div class="sl">boller smakt</div></div>
       <div class="stat-box"><div class="sv">${avgMyScore}</div><div class="sl">snittkarakter</div></div>
-      <div class="stat-box"><div class="sv">${uniquePlaces||'–'}</div><div class="sl">steder besøkt</div></div>
+      <div class="stat-box"><div class="sv">${uniquePlaces||'–'}</div><div class="sl">bakerier besøkt</div></div>
       <div class="stat-box"><div class="sv">${wish.length}</div><div class="sl">på smakslista</div></div>
       ${topBakery?`<div class="stat-box" style="grid-column:span 2"><div class="sv" style="font-size:13px;padding-top:2px">${esc(topBakery.name)}</div><div class="sl">din beste bolle · ${topBakery.score.toFixed(2)}/5</div></div>`:''}
     </div>
