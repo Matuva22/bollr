@@ -27,6 +27,7 @@ CREATE TABLE ratings (
   score      numeric(3,2) CHECK (score >= 0 AND score <= 5),
   note       text,
   photo_url  text,
+  tags       text[] DEFAULT '{}',
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (bakery_id, user_id)
 );
