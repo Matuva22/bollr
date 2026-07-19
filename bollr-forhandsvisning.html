@@ -48,14 +48,6 @@
     display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Fraunces',serif
   }
 
-  /* ===== Location line ===== */
-  .loc{
-    display:flex;align-items:center;gap:8px;padding:12px 24px;font-size:12px;
-    letter-spacing:.06em;color:var(--stone);border-bottom:1px solid var(--hair-2)
-  }
-  .loc svg{width:13px;height:13px}
-  .loc .lk{margin-left:auto;color:var(--kanel);font-weight:600;cursor:pointer;letter-spacing:.08em;text-transform:uppercase;font-size:10.5px}
-
   /* ===== Section head ===== */
   .head{padding:30px 24px 10px}
   .head .ey{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--kanel);font-weight:600}
@@ -83,17 +75,6 @@
   .ln{background:none;border:none;padding:0;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--kanel);cursor:pointer;display:flex;align-items:center;gap:5px}
   .ln svg{width:13px;height:13px}
   .ln.wish.on{color:var(--kanel-deep)}
-
-  /* ===== Nearby map (restrained) ===== */
-  .map{
-    margin:6px 24px 0;height:150px;border-radius:4px;overflow:hidden;position:relative;
-    background:var(--melis-2);border:1px solid var(--hair)
-  }
-  .map svg.grid{position:absolute;inset:0;width:100%;height:100%;opacity:.6}
-  .map .pin{position:absolute;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:var(--kanel);cursor:pointer;border:2px solid var(--melis)}
-  .map .pin.top{width:14px;height:14px;background:var(--kard)}
-  .map .you{position:absolute;transform:translate(-50%,-50%);width:9px;height:9px;border-radius:50%;background:none;border:2px solid var(--kanel);box-shadow:0 0 0 4px rgba(111,74,47,.14)}
-  .map .cap{position:absolute;left:12px;bottom:10px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--stone)}
 
   /* ===== Bottom nav ===== */
   .nav{
@@ -209,27 +190,15 @@
     <button class="me" id="meBtn" onclick="go('profile')">·</button>
   </div>
 
-  <div class="loc">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg>
-    <span id="locText">Nær Åndalsnes</span>
-    <span class="lk" id="locLink" onclick="enableLoc()">Bruk posisjon</span>
-  </div>
-
   <div id="views"></div>
 </div>
 
 <div class="nav">
-  <button class="on" id="nav-nearby" onclick="go('nearby')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21s-7-6.3-7-11a7 7 0 0114 0c0 4.7-7 11-7 11z"/><circle cx="12" cy="10" r="2.3"/></svg>Nærhet
-  </button>
-  <button id="nav-top" onclick="go('top')">
+  <button class="on" id="nav-top" onclick="go('top')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 20V10M12 20V5M18 20v-8"/></svg>Kåring
   </button>
   <button class="plus" onclick="openRate()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
-  </button>
-  <button id="nav-map" onclick="go('map')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 5l6 2 6-2v13l-6 2-6-2-6 2V7z"/><path d="M9 5v13M15 7v13"/></svg>Kart
   </button>
   <button id="nav-lists" onclick="go('profile')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 7h14M5 12h14M5 17h9"/></svg>Mitt
@@ -242,14 +211,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-// ─── Config — fyll inn etter opprettelse av Supabase-prosjekt ──────────────
-// Finn verdiene i Supabase: Settings → API → Project URL / anon public key
 const SUPABASE_URL  = 'https://zijxangdvhpghzracztf.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppanhhbmdkdmhwZ2h6cmFjenRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MzAxOTUsImV4cCI6MjEwMDAwNjE5NX0.Cp4QW3q0c-VdylRZhgrFP0OhQkbQaf-X5hEKCPjOQxQ';
 
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-// ─── spiral (uendret) ─────────────────────────────────────────────────────
 function spiralPath(cx,cy,turns,sr,er,sd,steps=260){
   const sa=sd*Math.PI/180,ta=turns*2*Math.PI,pts=[];
   for(let i=0;i<=steps;i++){const t=i/steps,ang=sa+t*ta,r=sr+(er-sr)*t;pts.push([cx+r*Math.cos(ang),cy+r*Math.sin(ang)]);}
@@ -264,7 +230,6 @@ function spiralPath(cx,cy,turns,sr,er,sd,steps=260){
 document.getElementById('brandMark').innerHTML=
   `<path d="${spiralPath(15,15,2.8,1.2,12,205)}" fill="none" stroke="#6f4a2f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`;
 
-// ─── kriterier (uendret) ──────────────────────────────────────────────────
 const CRITERIA=[
   {key:"smak",    name:"Smak",            hint:"Helhetlig smak",        w:.20},
   {key:"saft",    name:"Saftighet",       hint:"Fuktig, ikke tørr",     w:.18},
@@ -275,13 +240,10 @@ const CRITERIA=[
   {key:"pris",    name:"Størrelse / pris",hint:"Verdi for pengene",     w:.10},
 ];
 
-// ─── state ────────────────────────────────────────────────────────────────
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set();
-let userLat=null, userLng=null;
-let state={view:'nearby',user:null,locOn:false,tab:'tasted',draft:{},editing:null};
+let state={view:'top',user:null,tab:'tasted',draft:{},editing:null};
 let _ready=false;
 
-// ─── utils ────────────────────────────────────────────────────────────────
 function scoreOf(s){
   const f=CRITERIA.filter(c=>s[c.key]>0);
   if(!f.length)return null;
@@ -290,30 +252,15 @@ function scoreOf(s){
 }
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2400);}
-function haversine(la1,lo1,la2,lo2){
-  const R=6371,dL=(la2-la1)*Math.PI/180,dG=(lo2-lo1)*Math.PI/180;
-  const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dG/2)**2;
-  return+(R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a))).toFixed(1);
-}
 
-// ─── data ─────────────────────────────────────────────────────────────────
 async function loadBakeries(){
   const {data,error}=await db.rpc('bakery_averages');
   if(error){console.error('loadBakeries:',error);return;}
-  const clat=userLat??62.567,clng=userLng??7.687;
-  const lats=data.map(b=>b.lat).filter(Boolean);
-  const lngs=data.map(b=>b.lng).filter(Boolean);
-  const minLat=lats.length?Math.min(...lats):62,maxLat=lats.length?Math.max(...lats):63;
-  const minLng=lngs.length?Math.min(...lngs):7, maxLng=lngs.length?Math.max(...lngs):11;
-  const r1=Math.max(maxLat-minLat,.1),r2=Math.max(maxLng-minLng,.1);
   BAKERIES=data.map(b=>({
     ...b,
     score:+(b.avg_score??0),
     count:+b.rating_count,
     wish:MY_WISHLIST.has(b.id),
-    dist:(b.lat&&b.lng)?haversine(clat,clng,b.lat,b.lng):99,
-    x:b.lng?Math.round((b.lng-minLng)/r2*76+12):50,
-    y:b.lat?Math.round(100-(b.lat-minLat)/r1*56+12):50,
   }));
 }
 
@@ -329,7 +276,6 @@ async function loadUserData(){
   BAKERIES.forEach(b=>b.wish=MY_WISHLIST.has(b.id));
 }
 
-// ─── auth ─────────────────────────────────────────────────────────────────
 db.auth.onAuthStateChange(async(_ev,session)=>{
   if(session?.user){
     state.user=session.user;
@@ -355,42 +301,33 @@ async function login(p){
 }
 async function logout(){
   await db.auth.signOut();
-  go('nearby');
+  go('top');
 }
 
-// ─── routing ──────────────────────────────────────────────────────────────
 function go(v){
   state.view=v;
-  ['nearby','top','map','lists'].forEach(n=>document.getElementById('nav-'+n)?.classList.remove('on'));
-  ({nearby:'nav-nearby',top:'nav-top',map:'nav-map',profile:'nav-lists'})[v]&&
-    document.getElementById(({nearby:'nav-nearby',top:'nav-top',map:'nav-map',profile:'nav-lists'})[v]).classList.add('on');
+  document.getElementById('nav-top')?.classList.toggle('on',v==='top');
+  document.getElementById('nav-lists')?.classList.toggle('on',v==='profile');
   render();window.scrollTo(0,0);
 }
 
-// ─── rendering ────────────────────────────────────────────────────────────
 function render(){
   const v=document.getElementById('views');
-  if(state.view==='nearby')v.innerHTML=viewNearby();
-  else if(state.view==='top')v.innerHTML=viewTop();
-  else if(state.view==='map')v.innerHTML=viewMap();
+  if(state.view==='top')v.innerHTML=viewTop();
   else v.innerHTML=state.user?viewProfile():viewLogin();
 }
 
 function entryHTML(b,opts={}){
   const id=b.id;
   const rank=opts.rank?`<span class="rank">${String(opts.rank).padStart(2,'0')}</span>`:'';
-  const distStr=(opts.dist&&b.dist<90)?`<span class="dot">·</span>${b.dist} km`:'';
   return `<div class="entry" onclick="openBakery('${id}')">
     ${rank}
     <div class="body">
       <h3>${esc(b.name)}</h3>
-      <div class="meta"><span class="type">${esc(b.type)}</span><span class="dot">·</span>${esc(b.place)}${distStr}</div>
+      <div class="meta"><span class="type">${esc(b.type)}</span><span class="dot">·</span>${esc(b.place)}</div>
       <div class="acts">
         <button class="ln wish ${b.wish?'on':''}" onclick="event.stopPropagation();toggleWish('${id}')">
           <svg viewBox="0 0 24 24" fill="${b.wish?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>${b.wish?'Ønsket':'Ønskeliste'}
-        </button>
-        <button class="ln" onclick="event.stopPropagation();directions('${id}')">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>Vei
         </button>
       </div>
     </div>
@@ -399,18 +336,6 @@ function entryHTML(b,opts={}){
       <div class="cnt">${b.count} ${b.count===1?'vurdering':'vurderinger'}</div>
     </div>
   </div>`;
-}
-
-function viewNearby(){
-  if(!BAKERIES.length)return`<div class="empty"><span class="serif">Ingen bakerier ennå</span><p>Legg til det første via + knappen.</p></div>`;
-  const s=[...BAKERIES].sort((a,b)=>a.dist-b.dist);
-  return`<div class="head">
-    <div class="ey">${state.locOn?'Din posisjon':'Rundt Åndalsnes'}</div>
-    <h1>I nærheten</h1>
-    <p>De nærmeste bakeriene, etter fellesskapets snitt. Trykk «Vei» for rute i Google Maps.</p>
-  </div>
-  ${miniMap(s.slice(0,5))}
-  <div class="list">${s.map(b=>entryHTML(b,{dist:true})).join('')}</div>`;
 }
 
 function viewTop(){
@@ -422,32 +347,6 @@ function viewTop(){
     <p>Kåret av fellesskapet, rangert på anonyme snitt — så ærligheten består.</p>
   </div>
   <div class="list">${s.map((b,i)=>entryHTML(b,{rank:i+1})).join('')}</div>`;
-}
-
-function miniMap(list){
-  return`<div class="map">
-    <svg class="grid" viewBox="0 0 100 60" preserveAspectRatio="none">
-      <path d="M-5 38 Q30 32 55 36 T105 30" stroke="#d8cdbb" stroke-width="1" fill="none"/>
-      <path d="M25 -5 Q30 26 42 40 T52 65" stroke="#e2d9c9" stroke-width="1" fill="none"/>
-    </svg>
-    ${state.locOn?'<div class="you" style="left:48%;top:52%"></div>':''}
-    ${list.map((b,i)=>`<div class="pin ${i===0?'top':''}" style="left:${b.x}%;top:${b.y}%" onclick="openBakery('${b.id}')"></div>`).join('')}
-    <div class="cap">${state.locOn?'Din posisjon':'Kart'}</div>
-  </div>`;
-}
-
-function viewMap(){
-  return`<div class="head"><div class="ey">Utforsk</div><h1>Kart</h1>
-    <p>Bollene rundt deg. I den ferdige appen blir dette et fullt kart du kan panorere og zoome.</p></div>
-  <div class="map" style="height:280px;margin:6px 24px">
-    <svg class="grid" viewBox="0 0 100 80" preserveAspectRatio="none">
-      <path d="M-5 50 Q30 42 55 47 T105 40" stroke="#d8cdbb" stroke-width="1" fill="none"/>
-      <path d="M25 -5 Q30 34 42 52 T52 85" stroke="#e2d9c9" stroke-width="1" fill="none"/>
-    </svg>
-    ${state.locOn?'<div class="you" style="left:48%;top:52%"></div>':''}
-    ${BAKERIES.map(b=>`<div class="pin ${b.score>=5.2?'top':''}" style="left:${b.x}%;top:${b.y}%" onclick="openBakery('${b.id}')"></div>`).join('')}
-  </div>
-  <div class="list">${[...BAKERIES].sort((a,b)=>a.dist-b.dist).slice(0,3).map(b=>entryHTML(b,{dist:true})).join('')}</div>`;
 }
 
 function viewLogin(){
@@ -485,24 +384,14 @@ function viewProfile(){
     <button class="${state.tab==='tasted'?'on':''}" onclick="setTab('tasted')">Smakt · ${tasted.length}</button>
     <button class="${state.tab==='wish'?'on':''}" onclick="setTab('wish')">Ønskeliste · ${wish.length}</button>
   </div>
-  ${showList.length?`<div class="list">${showList.map(b=>entryHTML(b,{dist:false})).join('')}</div>`
+  ${showList.length?`<div class="list">${showList.map(b=>entryHTML(b)).join('')}</div>`
     :`<div class="empty"><span class="serif">${state.tab==='tasted'?'Ingen boller ennå':'Ønskelista er tom'}</span><p>${state.tab==='tasted'?'Trykk + for å vurdere din første bolle.':'Trykk hjertet på et bakeri for å ta vare på det.'}</p></div>`}
   <div style="padding:16px 24px"><button class="btn ghost" onclick="logout()">Logg ut</button></div>`;
 }
 
 function setTab(t){state.tab=t;render();}
 
-// ─── handlinger ───────────────────────────────────────────────────────────
 function openBakery(id){openRate(BAKERIES.find(b=>b.id===id));}
-
-function directions(id){
-  const b=BAKERIES.find(x=>x.id===id);
-  if(b?.lat&&b?.lng){
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${b.lat},${b.lng}`,'_blank');
-  }else{
-    toast('Ingen koordinater lagret for dette bakeriet');
-  }
-}
 
 async function toggleWish(id){
   if(!state.user){toast('Logg inn for å bruke ønskelista');go('profile');return;}
@@ -588,28 +477,16 @@ async function saveRating(){
   MY_TASTED.add(bakeryId);
   closeSheet();toast('Vurderingen er lagret');
   await loadBakeries();await loadUserData();
-  go(state.editing?state.view:'top');
+  go('top');
 }
 
 function openSheet(){document.getElementById('scrim').classList.add('open');document.getElementById('sheet').classList.add('open');}
 function closeSheet(){document.getElementById('scrim').classList.remove('open');document.getElementById('sheet').classList.remove('open');}
 
-function enableLoc(){
-  navigator.geolocation.getCurrentPosition(async pos=>{
-    userLat=pos.coords.latitude;userLng=pos.coords.longitude;
-    state.locOn=true;
-    document.getElementById('locText').textContent='Din posisjon';
-    document.getElementById('locLink').classList.add('hidden');
-    await loadBakeries();
-    render();
-  },()=>toast('Posisjon ikke tilgjengelig'));
-}
-
-// ─── oppstart ─────────────────────────────────────────────────────────────
 async function init(){
   await loadBakeries();
   _ready=true;
-  go('nearby');
+  go('top');
 }
 init();
 </script>
