@@ -186,7 +186,7 @@
 
 <div class="nav">
   <button class="on" id="nav-top" onclick="go('top')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 20V10M12 20V5M18 20v-8"/></svg>Kåring
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 20V10M12 20V5M18 20v-8"/></svg>Toppliste
   </button>
   <button class="plus" onclick="openRate()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
@@ -319,7 +319,7 @@ function viewTop(){
 
   return`<div class="head">
     <h1>Norges beste boller</h1>
-    <p>Kåret av fellesskapet, rangert på anonyme snitt.</p>
+    <p>For deg som tar boller på alvor.</p>
     <div class="meta-line">${BAKERIES.length} bakerier · ${totalRatings} vurderinger</div>
   </div>
   <div class="search-wrap"><input type="search" placeholder="Søk bakeri eller sted …" value="${esc(searchQ)}" oninput="setSearch(this.value)" autocomplete="off"></div>
