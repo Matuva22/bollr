@@ -353,7 +353,7 @@ function entryHTML(b,opts={}){
       <div class="meta"><span class="type">${esc(b.type)}</span><span class="dot">·</span>${esc(b.place)}</div>
       <div class="acts">
         <button class="ln wish ${b.wish?'on':''}" onclick="event.stopPropagation();toggleWish('${b.id}')">
-          <svg viewBox="0 0 24 24" fill="${b.wish?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>${b.wish?'Ønsket':'Ønskeliste'}
+          <svg viewBox="0 0 24 24" fill="${b.wish?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>${b.wish?'Lagt til':'Smaksliste'}
         </button>
       </div>
     </div>
@@ -556,14 +556,14 @@ async function saveRating(){
 
 // ─── Ønskeliste ───────────────────────────────────────────────────────────────
 async function toggleWish(id){
-  if(!state.user){toast('Logg inn for å bruke ønskelista');go('profile');return;}
+  if(!state.user){toast('Logg inn for å bruke smakslista');go('profile');return;}
   const b=BAKERIES.find(x=>x.id===id);if(!b)return;
   if(b.wish){
     const {error}=await db.from('wishlist').delete().eq('user_id',state.user.id).eq('bakery_id',id);
-    if(!error){MY_WISHLIST.delete(id);b.wish=false;toast('Fjernet fra ønskelista');}
+    if(!error){MY_WISHLIST.delete(id);b.wish=false;toast('Fjernet fra smakslista');}
   }else{
     const {error}=await db.from('wishlist').insert({user_id:state.user.id,bakery_id:id});
-    if(!error){MY_WISHLIST.add(id);b.wish=true;toast('Lagt i ønskelista');}
+    if(!error){MY_WISHLIST.add(id);b.wish=true;toast('Lagt i smakslista');}
   }
   render();
 }
@@ -609,16 +609,16 @@ function viewProfile(){
   </div>
   <div class="seg">
     <button class="${state.tab==='tasted'?'on':''}" onclick="setTab('tasted')">Smakt · ${tasted.length}</button>
-    <button class="${state.tab==='wish'?'on':''}" onclick="setTab('wish')">Ønskeliste · ${wish.length}</button>
+    <button class="${state.tab==='wish'?'on':''}" onclick="setTab('wish')">Smaksliste · ${wish.length}</button>
   </div>
   ${showList.length?`<div class="list">${showList.map(b=>entryHTML(b)).join('')}</div>`
-    :`<div class="empty"><span class="serif">${state.tab==='tasted'?'Ingen boller ennå':'Ønskelista er tom'}</span><p>${state.tab==='tasted'?'Trykk + for å vurdere din første bolle.':'Trykk hjertet på et bakeri for å ta vare på det.'}</p></div>`}
+    :`<div class="empty"><span class="serif">${state.tab==='tasted'?'Ingen boller ennå':'Smakslista er tom'}</span><p>${state.tab==='tasted'?'Trykk + for å vurdere din første bolle.':'Trykk hjertet på et bakeri for å legge det til.'}</p></div>`}
   <div class="stats">
     <div class="ey">Din statistikk</div>
     <div class="stat-grid">
       <div class="stat-box"><div class="sv">${tasted.length}</div><div class="sl">bakerier smakt</div></div>
       <div class="stat-box"><div class="sv">${avgMyScore}</div><div class="sl">snittkarakter</div></div>
-      <div class="stat-box"><div class="sv">${wish.length}</div><div class="sl">på ønskelista</div></div>
+      <div class="stat-box"><div class="sv">${wish.length}</div><div class="sl">på smakslista</div></div>
       <div class="stat-box"><div class="sv" style="font-size:16px;padding-top:6px">${esc(favType)}</div><div class="sl">favorittbolle</div></div>
     </div>
   </div>
