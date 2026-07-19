@@ -364,15 +364,18 @@ function entryHTML(b,opts={}){
 
 // ─── Statistikk ───────────────────────────────────────────
 function viewStats(){
-  const totalRatings=BAKERIES.reduce((s,b)=>s+b.count,0);
+  const approved=BAKERIES.filter(b=>b.count>0);
+  const totalRatings=approved.reduce((s,b)=>s+b.count,0);
+  const avgScore=approved.length?approved.reduce((s,b)=>s+(b.score??0),0)/approved.length:null;
 
   const placeMap={};
-  BAKERIES.forEach(b=>{if(b.score==null)return;if(!placeMap[b.place])placeMap[b.place]={sum:0,n:0,ratings:0};placeMap[b.place].sum+=b.score;placeMap[b.place].n++;placeMap[b.place].ratings+=b.count;});
-  const bestePlasser=Object.entries(placeMap).map(([p,v])=>({place:p,score:v.sum/v.n,bakeries:v.n,ratings:v.ratings})).sort((a,b)=>b.score-a.score).slice(0,6);
+  approved.forEach(b=>{if(!placeMap[b.place])placeMap[b.place]={sum:0,n:0,ratings:0};placeMap[b.place].sum+=b.score??0;placeMap[b.place].n++;placeMap[b.place].ratings+=b.count;});
+  const antallByer=Object.keys(placeMap).length;
+  const bestePlasser=Object.entries(placeMap).map(([p,v])=>({place:p,score:v.sum/v.n,bakeries:v.n,ratings:v.ratings})).sort((a,b)=>b.score-a.score).slice(0,3);
 
   const typeMap={};
-  BAKERIES.forEach(b=>{if(b.score==null)return;if(!typeMap[b.type])typeMap[b.type]={sum:0,n:0};typeMap[b.type].sum+=b.score;typeMap[b.type].n++;});
-  const besteTyper=Object.entries(typeMap).map(([t,v])=>({type:t,score:v.sum/v.n,n:v.n})).sort((a,b)=>b.score-a.score);
+  approved.forEach(b=>{if(!typeMap[b.type])typeMap[b.type]={sum:0,n:0};typeMap[b.type].sum+=b.score??0;typeMap[b.type].n++;});
+  const besteTyper=Object.entries(typeMap).map(([t,v])=>({type:t,score:v.sum/v.n,n:v.n})).sort((a,b)=>b.score-a.score).slice(0,3);
 
   const plasseListe=bestePlasser.map((p,i)=>`
     <div class="entry" style="cursor:default">
@@ -395,11 +398,18 @@ function viewStats(){
   return`<div class="head">
     <h1>Statistikk</h1>
     <p>Mønstre og innsikt fra alle vurderinger.</p>
-    <div class="meta-line">${BAKERIES.length} bakerier · ${totalRatings} vurderinger</div>
   </div>
-  ${!BAKERIES.length?`<div class="empty"><span class="serif">Ingen data ennå</span><p>Statistikken fylles ut etter hvert som bakerier registreres.</p></div>`:
-  `${bestePlasser.length?`<div class="sec"><div class="ey">Beste byer</div></div><div class="list">${plasseListe}</div>`:''}
-   ${besteTyper.length?`<div class="sec"><div class="ey">Beste bolletyper</div></div><div class="list">${typeListe}</div>`:''}`}`;
+  ${!approved.length?`<div class="empty"><span class="serif">Ingen data ennå</span><p>Statistikken fylles ut etter hvert som bakerier registreres.</p></div>`:`
+  <div class="stats" style="border-top:none;margin-top:0;padding-top:0">
+    <div class="stat-grid">
+      <div class="stat-box"><div class="sv">${totalRatings}</div><div class="sl">Vurderinger</div></div>
+      <div class="stat-box"><div class="sv">${approved.length}</div><div class="sl">Bakerier</div></div>
+      <div class="stat-box"><div class="sv">${antallByer}</div><div class="sl">Byer og steder</div></div>
+      <div class="stat-box"><div class="sv">${avgScore!=null?avgScore.toFixed(2):'–'}</div><div class="sl">Snittkarakter</div></div>
+    </div>
+  </div>
+  ${bestePlasser.length?`<div class="sec"><div class="ey">Beste byer</div></div><div class="list">${plasseListe}</div>`:''}
+  ${besteTyper.length?`<div class="sec"><div class="ey">Beste bolletyper</div></div><div class="list">${typeListe}</div>`:''}`}`;
 }
 
 // ─── Detaljside ───────────────────────────────────────────
