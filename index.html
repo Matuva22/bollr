@@ -62,12 +62,13 @@
   .sec{padding:24px 24px 4px}
   .sec .ey{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--kanel);font-weight:600}
 
-  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:var(--melis);border-top:1px solid var(--hair);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;justify-content:space-between;align-items:center;z-index:35}
-  .nav button{background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--stone);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:2px 6px;font-family:'Inter'}
+  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:var(--melis);border-top:1px solid var(--hair);padding:12px 0 calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;z-index:35}
+  .nav button{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--stone);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:2px 0;font-family:'Inter'}
   .nav button svg{width:20px;height:20px;stroke-width:1.6}
   .nav button.on{color:var(--kard)}
-  .nav .plus{background:var(--kard);color:var(--melis);width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .nav .plus svg{width:22px;height:22px;stroke-width:1.8}
+  .nav .plus{background:none;padding:0}
+  .plus-circle{background:var(--kard);color:var(--melis);width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+  .plus-circle svg{width:22px;height:22px;stroke-width:1.8}
 
   .empty{text-align:center;padding:60px 40px;color:var(--stone)}
   .empty .serif{font-size:20px;color:var(--kard);display:block;margin-bottom:8px;font-weight:300;font-family:'Fraunces',serif}
@@ -195,7 +196,9 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Statistikk
   </button>
   <button class="plus" onclick="openRate()">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+    <span class="plus-circle">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
+    </span>
   </button>
   <button id="nav-smaksliste" onclick="go('smaksliste')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>Smaksliste
