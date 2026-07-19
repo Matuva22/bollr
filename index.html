@@ -210,7 +210,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-const HERE_KEY      = 'AxcJQdzhKwdDq-63xliqrYSNOSfRx28Ydcc22EQgoaY';
 const SUPABASE_URL  = 'https://zijxangdvhpghzracztf.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InppanhhbmdkdmhwZ2h6cmFjenRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ0MzAxOTUsImV4cCI6MjEwMDAwNjE5NX0.Cp4QW3q0c-VdylRZhgrFP0OhQkbQaf-X5hEKCPjOQxQ';
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -229,12 +228,11 @@ function spiralPath(cx,cy,turns,sr,er,sd,steps=260){
 document.getElementById('brandMark').innerHTML=
   `<path d="${spiralPath(15,15,2.8,1.2,12,205)}" fill="none" stroke="#6f4a2f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`;
 
-const BOLLE_TYPER=['Hvetebolle','Kanelbolle','Skolebolle','Solskinnsbolle','Kardemommebolle','Andre boller'];
 const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor størrelse','Autentisk','Nybakt','God pris','Sterk kardemomme','Klassisk','Nyskapende'];
 
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set();
-let state={view:'top',user:null,draft:{score:null,bolleType:null,note:'',photoFile:null,photoUrl:null,tags:[],lat:null,lng:null},editing:null};
-let _hereResults=[], _searchTimer=null;
+let state={view:'top',user:null,draft:{score:null,bolleType:null,selectedBakeryName:null,selectedBakeryPlace:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
+let _searchTimer=null;
 let searchQ='', filterType='';
 let _ready=false;
 const myRatingStore={};
@@ -468,6 +466,8 @@ function openRate(b,existingRating=null){
   state.draft={
     score:existingRating?.score!=null?+existingRating.score:null,
     bolleType:b?.type||null,
+    selectedBakeryName:null,
+    selectedBakeryPlace:null,
     note:existingRating?.note||'',
     photoFile:null,
     photoUrl:existingRating?.photo_url||null,
@@ -478,21 +478,27 @@ function openRate(b,existingRating=null){
   const sliderVal=state.draft.score??0;
   const hasScore=state.draft.score!=null;
   const tagChips=TAGS.map(t=>`<button class="tag-chip ${state.draft.tags.includes(t)?'on':''}" onclick="toggleTag('${esc(t)}')">${esc(t)}</button>`).join('');
-  const bolleChips=BOLLE_TYPER.map(t=>`<button class="tag-chip ${state.draft.bolleType===t?'on':''}" onclick="selectBolleType('${esc(t)}')">${esc(t)}</button>`).join('');
 
   document.getElementById('sheet').innerHTML=`
     <div class="grab"></div>
     <h2>${b?esc(b.name):'Vurder en bolle'}</h2>
-    <div class="lead">${b?esc(b.type)+' · '+esc(b.place):'Legg til bakeri og gi det en score.'}</div>
+    <div class="lead">${b?esc(b.type)+' · '+esc(b.place):'Finn bakeriet og velg type bolle.'}</div>
 
-    ${b?'':`<div class="field">
+    ${b?'':`
+      <div class="field">
         <label>Bakeri</label>
         <input id="rName" placeholder="Navn på bakeri" oninput="updateBakerySearch(this.value)" autocomplete="off">
         <div class="suggest-list" id="bakerySuggestions"></div>
       </div>
       <div class="field">
+        <label>Sted</label>
+        <input id="rPlace" placeholder="By eller tettsted" oninput="updateSaveBtn()">
+      </div>
+      <div class="field">
         <label>Type bolle</label>
-        <div class="tag-chips" id="bolleChips">${bolleChips}</div>
+        <div id="bolleTypeInner">
+          <input id="rNewBolleType" placeholder="Skriv inn type bolle …" oninput="updateNewBolleType(this.value)">
+        </div>
       </div>`}
 
     <div class="field"><label>Score</label></div>
@@ -515,21 +521,28 @@ function openRate(b,existingRating=null){
       </button>
     </div>
 
-    ${b?'':`<div class="field"><label>Sted</label><input id="rPlace" placeholder="By eller tettsted"></div>`}
-
     <div class="field">
       <label>Stikkord</label>
       <div class="tag-chips" id="tagChips">${tagChips}</div>
     </div>
 
-    <button class="btn" id="saveBtn" ${hasScore&&(b||(state.draft.bolleType&&''))? '':'disabled'} onclick="saveRating()" style="margin-top:16px">${existingRating?'Oppdater vurdering':'Lagre vurdering'}</button>`;
+    <button class="btn" id="saveBtn" disabled onclick="saveRating()" style="margin-top:16px">${existingRating?'Oppdater vurdering':'Lagre vurdering'}</button>`;
 
+  updateSaveBtn();
   openSheet();
 }
 
 function selectBolleType(t){
   state.draft.bolleType=t;
+  const inp=document.getElementById('rNewBolleType');
+  if(inp)inp.value='';
   document.querySelectorAll('#bolleChips .tag-chip').forEach(el=>el.classList.toggle('on',el.textContent===t));
+  updateSaveBtn();
+}
+
+function updateNewBolleType(val){
+  state.draft.bolleType=val.trim()||null;
+  document.querySelectorAll('#bolleChips .tag-chip').forEach(el=>el.classList.remove('on'));
   updateSaveBtn();
 }
 
@@ -549,10 +562,15 @@ function updateSlider(val){
 
 function updateSaveBtn(){
   const hasScore=state.draft.score!=null;
-  const named=state.editing||document.getElementById('rName')?.value.trim();
-  const hasType=state.editing||state.draft.bolleType;
   const btn=document.getElementById('saveBtn');
-  if(btn)btn.disabled=!(hasScore&&named&&hasType);
+  if(!btn)return;
+  if(state.editing){
+    btn.disabled=!hasScore;
+  }else{
+    const name=document.getElementById('rName')?.value.trim();
+    const place=document.getElementById('rPlace')?.value.trim();
+    btn.disabled=!(hasScore&&name&&place&&state.draft.bolleType);
+  }
 }
 
 function handlePhoto(input){
@@ -575,61 +593,61 @@ async function uploadPhoto(file,bakeryId){
 }
 
 function updateBakerySearch(q){
-  updateSaveBtn();
+  state.draft.selectedBakeryName=null;
+  state.draft.selectedBakeryPlace=null;
+  state.draft.bolleType=null;
   clearTimeout(_searchTimer);
   const el=document.getElementById('bakerySuggestions');
   if(!el)return;
-  if(q.length<2){el.style.display='none';return;}
-  _searchTimer=setTimeout(()=>_doPlaceSearch(q),350);
+  if(q.length<2){el.style.display='none';renderBolleTypeSection();updateSaveBtn();return;}
+  _searchTimer=setTimeout(()=>_showBakerySuggestions(q),200);
 }
 
-async function _doPlaceSearch(q){
+function _showBakerySuggestions(q){
   const el=document.getElementById('bakerySuggestions');
   if(!el)return;
-
-  const existing=BAKERIES.filter(b=>
-    b.name.toLowerCase().includes(q.toLowerCase())||
-    b.place.toLowerCase().includes(q.toLowerCase())
-  ).slice(0,3);
-
-  try{
-    const res=await fetch(`https://discover.search.hereapi.com/v1/discover?in=countryCode:NOR&q=${encodeURIComponent(q)}&limit=6&lang=no&apikey=${HERE_KEY}`);
-    const data=await res.json();
-    _hereResults=data.items||[];
-  }catch(e){_hereResults=[];}
-
-  let html='';
-  if(existing.length){
-    html+=`<div class="suggest-hint">Finnes allerede i Bollr:</div>`+
-      existing.map(b=>`<div class="suggest-item" onclick="switchToExisting('${b.id}')">${esc(b.name)}<span>${esc(b.place)}</span></div>`).join('');
+  const seen=new Set();
+  const matches=BAKERIES.filter(b=>{
+    if(!b.name.toLowerCase().includes(q.toLowerCase()))return false;
+    if(seen.has(b.name))return false;
+    seen.add(b.name);return true;
+  }).slice(0,6);
+  if(matches.length){
+    el.innerHTML=`<div class="suggest-hint">Bakerier i Bollr:</div>`+
+      matches.map(b=>`<div class="suggest-item" onclick="selectExistingBakery(${JSON.stringify(b.name)})">${esc(b.name)}<span>${esc(b.place)}</span></div>`).join('');
+    el.style.display='block';
+  }else{
+    el.style.display='none';
   }
-  if(_hereResults.length){
-    html+=`<div class="suggest-hint" ${existing.length?'style="border-top:1px solid var(--hair-2)"':''}>Velg bakeri:</div>`+
-      _hereResults.map((item,i)=>{
-        const city=item.address?.city||item.address?.county||'';
-        const street=[item.address?.street,item.address?.houseNumber].filter(Boolean).join(' ');
-        const sub=[street,item.address?.postalCode,city].filter(Boolean).join(', ');
-        return`<div class="suggest-item" onclick="selectHerePlace(${i})">${esc(item.title)}<span>${esc(sub)}</span></div>`;
-      }).join('');
-  }
-
-  if(html){el.innerHTML=html;el.style.display='block';}
-  else{el.style.display='none';}
 }
 
-function selectHerePlace(i){
-  const item=_hereResults[i];if(!item)return;
-  const nameEl=document.getElementById('rName');
-  const placeEl=document.getElementById('rPlace');
-  if(nameEl)nameEl.value=item.title;
-  if(placeEl)placeEl.value=item.address?.city||item.address?.county||'';
-  state.draft.lat=item.position?.lat||null;
-  state.draft.lng=item.position?.lng||null;
+function selectExistingBakery(name){
+  const b=BAKERIES.find(x=>x.name===name);
+  if(!b)return;
+  state.draft.selectedBakeryName=name;
+  state.draft.selectedBakeryPlace=b.place;
+  state.draft.bolleType=null;
+  document.getElementById('rName').value=name;
+  document.getElementById('rPlace').value=b.place;
   document.getElementById('bakerySuggestions').style.display='none';
+  renderBolleTypeSection();
   updateSaveBtn();
 }
 
-function switchToExisting(id){closeSheet();setTimeout(()=>openBakery(id),60);}
+function renderBolleTypeSection(){
+  const inner=document.getElementById('bolleTypeInner');
+  if(!inner)return;
+  const name=state.draft.selectedBakeryName;
+  if(!name){
+    inner.innerHTML=`<input id="rNewBolleType" placeholder="Skriv inn type bolle …" oninput="updateNewBolleType(this.value)">`;
+    return;
+  }
+  const types=[...new Set(BAKERIES.filter(b=>b.name===name).map(b=>b.type))];
+  const chips=types.map(t=>`<button class="tag-chip ${state.draft.bolleType===t?'on':''}" onclick="selectBolleType(${JSON.stringify(t)})">${esc(t)}</button>`).join('');
+  inner.innerHTML=`
+    <div class="tag-chips" id="bolleChips" style="margin-bottom:12px">${chips}</div>
+    <input id="rNewBolleType" placeholder="Ny type bolle …" oninput="updateNewBolleType(this.value)">`;
+}
 
 async function saveRating(){
   if(!state.user){closeSheet();go('profile');return;}
@@ -639,17 +657,22 @@ async function saveRating(){
   if(state.editing){
     bakeryId=state.editing.id;
   }else{
-    const name=document.getElementById('rName')?.value.trim();
+    const name=(state.draft.selectedBakeryName||document.getElementById('rName')?.value.trim()||'').trim();
+    const place=(state.draft.selectedBakeryPlace||document.getElementById('rPlace')?.value.trim()||'').trim()||'Ukjent';
+    const type=state.draft.bolleType;
     if(!name){toast('Fyll inn navn på bakeri');return;}
-    const {data,error}=await db.from('bakeries').insert({
-      name,
-      place:document.getElementById('rPlace')?.value.trim()||'Ukjent',
-      type:state.draft.bolleType||'Bolle',
-      lat:state.draft.lat||null,
-      lng:state.draft.lng||null,
-    }).select('id').single();
-    if(error){toast('Kunne ikke lagre bakeri');return;}
-    bakeryId=data.id;
+    if(!type){toast('Velg eller skriv inn type bolle');return;}
+    const existing=BAKERIES.find(b=>
+      b.name.toLowerCase()===name.toLowerCase()&&
+      b.type.toLowerCase()===type.toLowerCase()
+    );
+    if(existing){
+      bakeryId=existing.id;
+    }else{
+      const {data,error}=await db.from('bakeries').insert({name,place,type}).select('id').single();
+      if(error){toast('Kunne ikke lagre bakeri');return;}
+      bakeryId=data.id;
+    }
   }
 
   let photoUrl=state.draft.photoUrl||null;
