@@ -64,14 +64,7 @@
   .sec{padding:24px 24px 4px}
   .sec .ey{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--kanel);font-weight:600}
 
-  #installBanner{display:none;position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom));width:calc(100% - 32px);max-width:448px;background:var(--kard);color:var(--melis);border-radius:4px;padding:12px 16px;align-items:center;gap:12px;z-index:40;box-shadow:0 4px 20px rgba(0,0,0,.25)}
-  #installBanner .ib-text{flex:1;font-size:13px;line-height:1.4}
-  #installBanner .ib-text strong{display:block;font-size:13px;margin-bottom:2px}
-  #installBanner button{background:none;border:none;cursor:pointer;color:var(--melis);font-family:'Inter';font-size:11px;font-weight:600;letter-spacing:.06em;white-space:nowrap;padding:0}
-  #installBanner .ib-add{background:var(--kanel);border-radius:3px;padding:7px 12px}
-  #installBanner .ib-dismiss{opacity:.5;margin-left:4px}
-
-  .nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:var(--melis);border-top:1px solid var(--hair);padding:12px 0 calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;z-index:35}
+.nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:480px;background:var(--melis);border-top:1px solid var(--hair);padding:12px 0 calc(12px + env(safe-area-inset-bottom));display:flex;align-items:center;z-index:35}
   .nav button{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:var(--stone);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;padding:2px 0;font-family:'Inter'}
   .nav button svg{width:20px;height:20px;stroke-width:1.6}
   .nav button.on{color:var(--kard)}
@@ -220,14 +213,6 @@
 <div class="toast" id="toast"></div>
 <div class="scrim" id="scrim" onclick="closeSheet()"></div>
 <div class="sheet" id="sheet"></div>
-<div id="installBanner">
-  <div class="ib-text">
-    <strong>Legg til på hjemskjermen</strong>
-    <span id="installMsg"></span>
-  </div>
-  <button class="ib-add" id="installBtn" onclick="doInstall()">Legg til</button>
-  <button class="ib-dismiss" onclick="dismissInstall()">✕</button>
-</div>
 <input type="file" id="photoInput" accept="image/*" style="display:none" onchange="handlePhoto(this)">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -947,7 +932,8 @@ function viewLogin(){
     </div>
     <button class="btn" onclick="loginEmail()" style="margin-top:4px">Send innloggingslenke</button>
     <p class="fine">Du får en lenke på e-post — ingen passord nødvendig.</p>
-  </div>`;
+  </div>
+  ${installHTML()}`;
 }
 
 function viewProfile(){
@@ -974,6 +960,7 @@ function viewProfile(){
   ${tasted.length?`<div class="sec"><div class="ey">Mine vurderinger</div></div><div class="list">${tasted.map(b=>entryHTML(b,{pending:MY_PENDING.has(b.id)})).join('')}</div>`
     :`<div class="empty"><span class="serif">Ingen boller ennå</span><p>Trykk + for å vurdere din første bolle.</p></div>`}
   ${_pendingRatings!==null?viewAdmin():''}
+  ${installHTML()}
   <div style="padding:16px 24px"><button class="btn ghost" onclick="logout()">Logg ut</button></div>`;
 }
 
@@ -1009,39 +996,18 @@ function closeSheet(){const s=document.getElementById('sheet');s.style.transform
 })();
 
 // ─── Installer PWA ────────────────────────────────────────
-let _installPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{
-  e.preventDefault();
-  _installPrompt=e;
-  const msg=document.getElementById('installMsg');
-  if(msg)msg.textContent='Åpne som app direkte fra hjemskjermen.';
-  document.getElementById('installBanner').style.display='flex';
-});
-async function doInstall(){
-  if(!_installPrompt)return;
-  _installPrompt.prompt();
-  const{outcome}=await _installPrompt.userChoice;
-  _installPrompt=null;
-  document.getElementById('installBanner').style.display='none';
-}
-function dismissInstall(){
-  document.getElementById('installBanner').style.display='none';
-  sessionStorage.setItem('installDismissed','1');
-}
-(function(){
-  if(sessionStorage.getItem('installDismissed'))return;
-  if(window.navigator.standalone)return;
+function installHTML(){
+  if(window.navigator.standalone)return'';
   const isIOS=/iphone|ipad|ipod/i.test(navigator.userAgent)&&!window.MSStream;
-  if(isIOS){
-    setTimeout(()=>{
-      const msg=document.getElementById('installMsg');
-      if(msg)msg.textContent='Trykk på Del-knappen i Safari, så «Legg til på hjem-skjermen».';
-      const btn=document.getElementById('installBtn');
-      if(btn)btn.style.display='none';
-      document.getElementById('installBanner').style.display='flex';
-    },3000);
-  }
-})();
+  const isAndroid=/android/i.test(navigator.userAgent);
+  let tip='';
+  if(isIOS)tip='I Safari: trykk på Del-knappen <b>⎙</b> nederst, deretter <b>Legg til på hjem-skjermen</b>.';
+  else if(isAndroid)tip='I Chrome: trykk på menyen <b>⋮</b> øverst til høyre, deretter <b>Legg til på startskjermen</b>.';
+  else tip='Åpne Bollr i mobilnettleseren din for å legge den til på hjemskjermen.';
+  return`<div class="stats" style="border-top:1px solid var(--hair-2);margin-top:8px">
+    <div class="ey" style="margin-bottom:10px">Installer som app</div>
+    <p style="font-size:13px;color:var(--stone);line-height:1.6">${tip}</p>
+  </div>`;
 
 // ─── Init ─────────────────────────────────────────────────
 async function init(){await loadBakeries();_ready=true;go('top');}
