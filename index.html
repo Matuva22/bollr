@@ -614,7 +614,7 @@ function _showBakerySuggestions(q){
   }).slice(0,6);
   if(matches.length){
     el.innerHTML=`<div class="suggest-hint">Bakerier i Bollr:</div>`+
-      matches.map(b=>`<div class="suggest-item" onclick="selectExistingBakery(${JSON.stringify(b.name)})">${esc(b.name)}<span>${esc(b.place)}</span></div>`).join('');
+      matches.map(b=>`<div class="suggest-item" data-name="${esc(b.name)}" onclick="selectExistingBakery(this.dataset.name)">${esc(b.name)}<span>${esc(b.place)}</span></div>`).join('');
     el.style.display='block';
   }else{
     el.style.display='none';
@@ -643,7 +643,7 @@ function renderBolleTypeSection(){
     return;
   }
   const types=[...new Set(BAKERIES.filter(b=>b.name===name).map(b=>b.type))];
-  const chips=types.map(t=>`<button class="tag-chip ${state.draft.bolleType===t?'on':''}" onclick="selectBolleType(${JSON.stringify(t)})">${esc(t)}</button>`).join('');
+  const chips=types.map(t=>`<button class="tag-chip ${state.draft.bolleType===t?'on':''}" data-type="${esc(t)}" onclick="selectBolleType(this.dataset.type)">${esc(t)}</button>`).join('');
   inner.innerHTML=`
     <div class="tag-chips" id="bolleChips" style="margin-bottom:12px">${chips}</div>
     <input id="rNewBolleType" placeholder="Ny type bolle …" oninput="updateNewBolleType(this.value)">`;
