@@ -165,6 +165,8 @@
   .sec{padding:24px 24px 4px}
   .sec .ey{font-size:10.5px;letter-spacing:.28em;text-transform:uppercase;color:var(--kanel);font-weight:600}
 
+  .pending-tag{display:inline-block;font-size:9.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#7a5c1e;background:#fef3cd;border:1px solid #f5e09a;border-radius:2px;padding:3px 8px;margin-top:6px}
+
   .toast{position:fixed;bottom:120px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--kard);color:var(--melis);padding:12px 22px;border-radius:3px;font-size:12.5px;letter-spacing:.03em;opacity:0;pointer-events:none;transition:.3s;z-index:80;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .hidden{display:none!important}
@@ -230,7 +232,7 @@ document.getElementById('brandMark').innerHTML=
 
 const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor størrelse','Autentisk','Nybakt','God pris','Sterk kardemomme','Klassisk','Nyskapende'];
 
-let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set();
+let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set(), MY_PENDING=new Set();
 let state={view:'top',user:null,draft:{score:null,bolleType:null,selectedBakeryName:null,selectedBakeryPlace:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
 let _searchTimer=null;
 let searchQ='', filterType='';
@@ -249,13 +251,14 @@ async function loadBakeries(){
 }
 
 async function loadUserData(){
-  if(!state.user){MY_TASTED=new Set();MY_WISHLIST=new Set();return;}
+  if(!state.user){MY_TASTED=new Set();MY_WISHLIST=new Set();MY_PENDING=new Set();return;}
   const uid=state.user.id;
   const [{data:r},{data:w}]=await Promise.all([
-    db.from('ratings').select('bakery_id').eq('user_id',uid),
+    db.from('ratings').select('bakery_id,approved').eq('user_id',uid),
     db.from('wishlist').select('bakery_id').eq('user_id',uid),
   ]);
   MY_TASTED=new Set((r||[]).map(x=>x.bakery_id));
+  MY_PENDING=new Set((r||[]).filter(x=>!x.approved).map(x=>x.bakery_id));
   MY_WISHLIST=new Set((w||[]).map(x=>x.bakery_id));
   BAKERIES.forEach(b=>b.wish=MY_WISHLIST.has(b.id));
 }
@@ -346,6 +349,7 @@ function entryHTML(b,opts={}){
     <div class="body">
       <h3>${esc(b.name)}</h3>
       <div class="meta"><span class="type">${esc(b.type)}</span><span class="dot">·</span>${esc(b.place)}</div>
+      ${opts.pending?`<div class="pending-tag">Venter på godkjenning</div>`:''}
       <div class="acts">
         <button class="ln wish ${b.wish?'on':''}" onclick="event.stopPropagation();toggleWish('${b.id}')">
           <svg viewBox="0 0 24 24" fill="${b.wish?'currentColor':'none'}" stroke="currentColor" stroke-width="1.6"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>${b.wish?'Lagt til':'Smaksliste'}
@@ -762,7 +766,7 @@ function viewProfile(){
   return`<div class="head">
     <h1>Hei, ${esc(state.user.name)}</h1>
   </div>
-  ${tasted.length?`<div class="list">${tasted.map(b=>entryHTML(b)).join('')}</div>`
+  ${tasted.length?`<div class="list">${tasted.map(b=>entryHTML(b,{pending:MY_PENDING.has(b.id)})).join('')}</div>`
     :`<div class="empty"><span class="serif">Ingen boller ennå</span><p>Trykk + for å vurdere din første bolle.</p></div>`}
   <div class="stats">
     <div class="ey">Din statistikk</div>

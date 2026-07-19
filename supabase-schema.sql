@@ -28,6 +28,7 @@ CREATE TABLE ratings (
   note       text,
   photo_url  text,
   tags       text[] DEFAULT '{}',
+  approved   boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (bakery_id, user_id)
 );
@@ -82,7 +83,7 @@ AS $$
     ROUND(AVG(r.score)::numeric,2) AS avg_score,
     b.created_at
   FROM bakeries b
-  LEFT JOIN ratings r ON r.bakery_id = b.id
+  LEFT JOIN ratings r ON r.bakery_id = b.id AND r.approved = true
   GROUP BY b.id, b.name, b.place, b.type, b.lat, b.lng, b.created_at
   ORDER BY avg_score DESC NULLS LAST;
 $$;
