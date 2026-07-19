@@ -97,14 +97,19 @@
 
   /* Slider */
   .slider-wrap{margin:8px 0 24px}
-  .slider-num{font-family:'Fraunces',serif;font-weight:300;font-size:72px;line-height:1;text-align:center;color:var(--kard);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-  .slider-num small{font-size:24px;color:var(--stone)}
-  .slider-num.empty{color:var(--stone);font-size:48px}
+  .slider-num{font-family:'Fraunces',serif;font-weight:300;font-size:48px;line-height:1;text-align:center;color:var(--kard);font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+  .slider-num small{font-size:18px;color:var(--stone)}
+  .slider-num.empty{color:var(--stone);font-size:32px}
   .range-wrap{position:relative;padding:8px 0}
   input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;background:var(--melis-2);border-radius:2px;outline:none;cursor:pointer}
   input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:28px;height:28px;border-radius:50%;background:var(--kard);cursor:pointer;border:3px solid var(--melis);box-shadow:0 1px 6px rgba(0,0,0,.25)}
   input[type=range]::-moz-range-thumb{width:28px;height:28px;border-radius:50%;background:var(--kard);cursor:pointer;border:3px solid var(--melis);box-shadow:0 1px 6px rgba(0,0,0,.25)}
   .range-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--stone);margin-top:6px;font-variant-numeric:tabular-nums}
+
+  /* Tags */
+  .tag-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+  .tag-chip{border:1px solid var(--hair);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:500;color:var(--stone);background:none;cursor:pointer;font-family:'Inter';transition:.12s}
+  .tag-chip.on{background:var(--kard);color:var(--melis);border-color:var(--kard)}
 
   /* Foto */
   .photo-wrap{margin-bottom:20px}
@@ -190,7 +195,7 @@
   <button class="plus" onclick="openRate()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>
   </button>
-  <button id="nav-smaksliste" class="hidden" onclick="go('smaksliste')">
+  <button id="nav-smaksliste" onclick="go('smaksliste')">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 21C7 17 4 13.5 4 10a4 4 0 018-1 4 4 0 018 1c0 3.5-3 7-8 11z"/></svg>Smaksliste
   </button>
   <button id="nav-profile" onclick="go('profile')">
@@ -223,8 +228,10 @@ function spiralPath(cx,cy,turns,sr,er,sd,steps=260){
 document.getElementById('brandMark').innerHTML=
   `<path d="${spiralPath(15,15,2.8,1.2,12,205)}" fill="none" stroke="#6f4a2f" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>`;
 
+const TAGS=['Luftig','Saftig','Sprø kant','God topping','Godt fylt','Stor størrelse','Autentisk','Nybakt','God pris','Sterk kardemomme','Klassisk','Nyskapende'];
+
 let BAKERIES=[], MY_TASTED=new Set(), MY_WISHLIST=new Set();
-let state={view:'top',user:null,draft:{score:null,note:'',photoFile:null,photoUrl:null},editing:null};
+let state={view:'top',user:null,draft:{score:null,note:'',photoFile:null,photoUrl:null,tags:[]},editing:null};
 let searchQ='', filterType='';
 let _ready=false;
 const myRatingStore={};
@@ -258,14 +265,12 @@ db.auth.onAuthStateChange(async(_ev,session)=>{
     state.user=session.user;
     state.user.name=(session.user.user_metadata?.full_name||session.user.email||'Bruker').split(' ')[0];
     document.getElementById('meBtn').textContent=state.user.name[0].toUpperCase();
-    document.getElementById('nav-smaksliste')?.classList.remove('hidden');
     await loadUserData();
     BAKERIES.forEach(b=>b.wish=MY_WISHLIST.has(b.id));
   }else{
     state.user=null;MY_TASTED=new Set();MY_WISHLIST=new Set();
     BAKERIES.forEach(b=>b.wish=false);
     document.getElementById('meBtn').textContent='·';
-    document.getElementById('nav-smaksliste')?.classList.add('hidden');
   }
   if(_ready)render();
 });
@@ -293,7 +298,7 @@ function render(){
   const el=document.getElementById('views');
   if(state.view==='top')el.innerHTML=viewTop();
   else if(state.view==='stats')el.innerHTML=viewStats();
-  else if(state.view==='smaksliste')el.innerHTML=state.user?viewSmaksliste():viewLogin();
+  else if(state.view==='smaksliste')el.innerHTML=state.user?viewSmaksliste():viewSmakslisteLogin();
   else el.innerHTML=state.user?viewProfile():viewLogin();
 }
 
@@ -426,6 +431,7 @@ function detailHTML(b,myRating){
       <span class="ct">${b.count} ${b.count===1?'vurdering':'vurderinger'}</span>
     </div>
     ${myRating?.score!=null?`<div class="my-score-box"><div class="ms-label">Din vurdering</div><div class="ms-val">${Number(myRating.score).toFixed(2)} / 5</div></div>`:''}
+    ${myRating?.tags?.length?`<div class="tag-chips" style="margin-bottom:16px">${myRating.tags.map(t=>`<span class="tag-chip on">${esc(t)}</span>`).join('')}</div>`:''}
     ${myRating?.note?`<div style="font-size:13.5px;color:var(--stone);font-style:italic;margin-bottom:16px">"${esc(myRating.note)}"</div>`:''}
     <div style="margin-top:16px">${rateBtn}</div>
     <button class="btn ghost" onclick="shareBakery('${b.id}')">Del dette bakeriet</button>
@@ -456,23 +462,49 @@ function shareBakery(id){
 // ─── Vurderingsskjema ─────────────────────────────────────
 function openRate(b,existingRating=null){
   if(!state.user){toast('Du må logge inn for å registrere en bolle');setTimeout(()=>go('profile'),800);return;}
-  state.draft={score:existingRating?.score!=null?+existingRating.score:null,note:existingRating?.note||'',photoFile:null,photoUrl:existingRating?.photo_url||null};
+  state.draft={
+    score:existingRating?.score!=null?+existingRating.score:null,
+    note:existingRating?.note||'',
+    photoFile:null,
+    photoUrl:existingRating?.photo_url||null,
+    tags:existingRating?.tags||[],
+  };
   state.editing=b||null;
 
   const sliderVal=state.draft.score??0;
   const hasScore=state.draft.score!=null;
+  const tagChips=TAGS.map(t=>`<button class="tag-chip ${state.draft.tags.includes(t)?'on':''}" onclick="toggleTag('${esc(t)}')">${esc(t)}</button>`).join('');
 
   document.getElementById('sheet').innerHTML=`
     <div class="grab"></div>
     <h2>${b?esc(b.name):'Vurder en bolle'}</h2>
-    <div class="lead">${b?esc(b.place)+' · '+esc(b.type):'Legg til bakeri og sett din score.'}</div>
+    <div class="lead">${b?esc(b.type)+' · '+esc(b.place):'Legg til bakeri og gi det en score.'}</div>
+
     ${b?'':`<div class="field">
         <label>Bakeri</label>
         <input id="rName" placeholder="Navn på bakeri" oninput="updateBakerySearch(this.value)" autocomplete="off">
         <div class="suggest-list" id="bakerySuggestions"></div>
       </div>
-      <div class="field"><label>Sted</label><input id="rPlace" placeholder="By eller tettsted"></div>
       <div class="field"><label>Type bolle</label><input id="rType" placeholder="Skillingsbolle, skolebolle …"></div>`}
+
+    <div class="field"><label>Kommentar</label><textarea id="rNote" placeholder="Kardemomme? Sprø kant? Verdt en omvei?">${esc(state.draft.note)}</textarea></div>
+
+    <div class="photo-wrap">
+      <label style="display:block;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--kanel);margin-bottom:9px">Bilde</label>
+      ${state.draft.photoUrl?`<img class="photo-preview show" id="photoPreview" src="${esc(state.draft.photoUrl)}">`:`<img class="photo-preview" id="photoPreview">`}
+      <button class="photo-btn ${state.draft.photoUrl?'has-photo':''}" id="photoBtnLabel" onclick="document.getElementById('photoInput').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        ${state.draft.photoUrl?'Bytt bilde':'Ta bilde eller velg fra bibliotek'}
+      </button>
+    </div>
+
+    ${b?'':`<div class="field" style="margin-top:18px"><label>Sted</label><input id="rPlace" placeholder="By eller tettsted"></div>`}
+
+    <div class="field">
+      <label>Stikkord</label>
+      <div class="tag-chips" id="tagChips">${tagChips}</div>
+    </div>
+
     <div class="field"><label>Score</label></div>
     <div class="slider-wrap">
       <div class="slider-num ${hasScore?'':'empty'}" id="sliderNum">${hasScore?Number(sliderVal).toFixed(2):'–'}<small>${hasScore?' / 5':''}</small></div>
@@ -481,23 +513,16 @@ function openRate(b,existingRating=null){
       </div>
       <div class="range-labels"><span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span></div>
     </div>
-    <div class="photo-wrap">
-      <label class="field" style="display:block"><span style="font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--kanel)">Bilde</span></label>
-      ${state.draft.photoUrl?`<img class="photo-preview show" id="photoPreview" src="${esc(state.draft.photoUrl)}">`:`<img class="photo-preview" id="photoPreview">`}
-      <button class="photo-btn ${state.draft.photoUrl?'has-photo':''}" id="photoBtnLabel" onclick="document.getElementById('photoInput').click()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        ${state.draft.photoUrl?'Bytt bilde':'Ta bilde eller velg fra bibliotek'}
-      </button>
-    </div>
-    <div class="field"><label>Notat</label><textarea id="rNote" placeholder="Kardemomme? Sprø kant? Verdt en omvei?">${esc(state.draft.note)}</textarea></div>
-    <button class="btn" id="saveBtn" ${hasScore&&(b||'')? '':'disabled'} onclick="saveRating()" style="margin-top:22px">${existingRating?'Oppdater vurdering':'Lagre vurdering'}</button>`;
+
+    <button class="btn" id="saveBtn" ${hasScore&&(b||'')? '':'disabled'} onclick="saveRating()" style="margin-top:8px">${existingRating?'Oppdater vurdering':'Lagre vurdering'}</button>`;
 
   openSheet();
-  if(!hasScore){
-    document.getElementById('scoreSlider').addEventListener('input',function(){
-      if(!state.draft._touched){state.draft._touched=true;this.style.opacity='1';}
-    },{once:true});
-  }
+}
+
+function toggleTag(t){
+  const i=state.draft.tags.indexOf(t);
+  if(i>=0)state.draft.tags.splice(i,1);else state.draft.tags.push(t);
+  document.querySelectorAll('.tag-chip').forEach(el=>el.classList.toggle('on',state.draft.tags.includes(el.textContent)));
 }
 
 function updateSlider(val){
@@ -577,6 +602,7 @@ async function saveRating(){
     score:state.draft.score,
     note:document.getElementById('rNote')?.value.trim()||null,
     photo_url:photoUrl,
+    tags:state.draft.tags.length?state.draft.tags:null,
   },{onConflict:'bakery_id,user_id'});
   if(error){toast('Kunne ikke lagre vurdering');return;}
 
@@ -598,6 +624,14 @@ async function toggleWish(id){
     if(!error){MY_WISHLIST.add(id);b.wish=true;toast('Lagt i smakslista');}
   }
   render();
+}
+
+function viewSmakslisteLogin(){
+  return`<div class="empty" style="padding-top:80px">
+    <span class="serif">Smaksliste</span>
+    <p>Du må logge inn for å se og bruke smakslisten din.</p>
+    <button class="btn" onclick="go('profile')" style="margin-top:24px;max-width:220px">Logg inn</button>
+  </div>`;
 }
 
 function viewSmaksliste(){
