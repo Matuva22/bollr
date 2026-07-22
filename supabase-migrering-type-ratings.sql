@@ -20,7 +20,7 @@ AS $$
   SELECT b.name, b.place, r.score, r.note, r.photo_url, r.created_at
   FROM ratings r
   JOIN bakeries b ON b.id = r.bakery_id
-  WHERE b.type = p_type AND r.approved = true
+  WHERE b.type = p_type
   ORDER BY r.score DESC NULLS LAST, r.created_at DESC
   LIMIT 15;
 $$;
