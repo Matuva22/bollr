@@ -526,16 +526,32 @@ function openPlaceDetail(place){
 async function openBakery(id){
   const b=BAKERIES.find(x=>x.id===id);if(!b)return;
   let myRating=null;
+  const tasks=[db.rpc('get_bakery_ratings',{p_bakery_id:id})];
   if(state.user&&MY_TASTED.has(id)){
-    const {data}=await db.from('ratings').select('*').eq('bakery_id',id).eq('user_id',state.user.id).maybeSingle();
-    myRating=data;
+    tasks.push(db.from('ratings').select('*').eq('bakery_id',id).eq('user_id',state.user.id).maybeSingle());
+  }
+  const [{data:reviews}, ownResult]=await Promise.all(tasks);
+  if(ownResult){
+    myRating=ownResult.data;
     if(myRating)myRatingStore[id]=myRating;
   }
-  document.getElementById('sheet').innerHTML=detailHTML(b,myRating);
+  document.getElementById('sheet').innerHTML=detailHTML(b,myRating,reviews||[]);
   openSheet();
 }
 
-function detailHTML(b,myRating){
+function reviewsHTML(reviews){
+  if(!reviews.length)return'';
+  return`<div class="sec" style="padding:24px 0 4px"><div class="ey">Siste vurderinger</div></div>
+    <div>${reviews.map(r=>`
+      <div style="padding:16px 0;border-bottom:1px solid var(--hair-2)">
+        <div class="score">${Number(r.score).toFixed(2)}<small> /5</small></div>
+        ${r.tags?.length?`<div class="tag-chips" style="margin-top:8px">${r.tags.map(t=>`<span class="tag-chip on">${esc(t)}</span>`).join('')}</div>`:''}
+        ${r.note?`<p style="font-size:13px;color:var(--stone);font-style:italic;margin-top:8px;line-height:1.5">"${esc(r.note)}"</p>`:''}
+      </div>`).join('')}
+    </div>`;
+}
+
+function detailHTML(b,myRating,reviews=[]){
   const hasPhoto=myRating?.photo_url;
   const rateBtn=state.user
     ?(MY_TASTED.has(b.id)
@@ -558,7 +574,8 @@ function detailHTML(b,myRating){
     ${myRating?.note?`<div style="font-size:13.5px;color:var(--stone);font-style:italic;margin-bottom:16px">"${esc(myRating.note)}"</div>`:''}
     <div style="margin-top:16px">${rateBtn}</div>
     <button class="btn ghost" onclick="shareBakery('${b.id}')">Del dette bakeriet</button>
-    ${deleteBtn}`;
+    ${deleteBtn}
+    ${reviewsHTML(reviews)}`;
 }
 
 async function confirmDelete(bakeryId){
